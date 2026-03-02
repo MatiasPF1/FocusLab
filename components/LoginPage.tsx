@@ -1,10 +1,14 @@
-import { GLSLHills } from "@/components/UI_Imported_Code/glsl-hills";
+import NeuralBackground from "@/components/ui/flow-field-background";
 import Link from "next/link";
 
 export default function LoginPage() {
   return (
     <div className="relative flex h-full w-full flex-col items-center justify-center overflow-hidden">
-      <GLSLHills />
+      <NeuralBackground 
+        color="#818cf8"
+        trailOpacity={0.1}
+        speed={0.8}
+      />
       <div className="space-y-6 pointer-events-none z-10 text-center absolute">
         <h1 className="font-semibold text-7xl whitespace-pre-wrap">
           <span className="italic text-6xl font-bold">
