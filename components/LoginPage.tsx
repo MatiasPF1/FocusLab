@@ -1,4 +1,5 @@
 import { GLSLHills } from "@/components/UI_Imported_Code/glsl-hills";
+import Link from "next/link";
 
 export default function LoginPage() {
   return (
@@ -15,9 +16,9 @@ export default function LoginPage() {
           Centralized platform for productivity and organization<br />
           to help you stay focused, created by students, for students.
         </p>
-        <button className="pointer-events-auto mt-4 px-8 py-3 bg-white text-black font-semibold rounded-full hover:bg-white/90 transition-colors">
+        <Link href="/auth" className="pointer-events-auto inline-block mt-4 px-8 py-3 bg-white text-black font-semibold rounded-full hover:bg-white/90 transition-colors">
           Get Started
-        </button>
+        </Link>
       </div>
     </div>
   );
