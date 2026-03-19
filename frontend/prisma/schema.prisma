@@ -1,0 +1,22 @@
+// prisma/schema.prisma
+
+//1-) Client Generator
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+//2-)Database type and connection
+datasource db {
+  provider = "postgresql"
+}
+
+//3-) Model for the User
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

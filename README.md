@@ -23,10 +23,19 @@ FocusLab is a modern web application designed to help students manage their acad
 - **Styling:** Tailwind CSS
 - **3D Graphics:** Three.js
 
+## Project Structure
+
+```
+FocusLab/
+├── frontend/   # Next.js app (UI, API routes, database logic)
+└── backend/    # Reserved for a dedicated backend server (future)
+```
+
 ## Getting Started
 
 ```bash
 # Install dependencies
+cd frontend
 npm install
 
 # Run development server
