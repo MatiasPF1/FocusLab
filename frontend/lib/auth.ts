@@ -7,9 +7,6 @@ import { prisma } from "@/lib/prisma";
 
 
 export const { handlers, signIn, signOut, auth } = NextAuth({adapter: PrismaAdapter(prisma),
-//gets handlers,signIn, signOut, and auth functions from NextAuth to export for use in the app
-//adapter: PrismaAdapter(prisma) connects NextAuth to  Prisma database, allowing  to store user data and sessions there
-
 
 
   //Use JWT sessions , using the credentials as Email and Passwors

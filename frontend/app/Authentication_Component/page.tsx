@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";   // to redirect after successful login
 import { signIn } from "next-auth/react";       // NextAuth's client-side login function
-import NeuralBackground from "@/app/Intro_Components/UI_21stDev_Component/flow-field-background";
+import NeuralBackground from "@/app/UI_21stDev/flow-field-background";
 import Link from "next/link";
 
 
@@ -139,6 +139,11 @@ function RegisterForm({ onLogin }: { onLogin: () => void }) {
     // Client-side check before hitting the server
     if (password !== confirm) {
       setError("Passwords do not match.");
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters.");
       return;
     }
 
