@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";   // to redirect after successful login
 import { signIn } from "next-auth/react";       // NextAuth's client-side login function
-import NeuralBackground from "@/components/ui/flow-field-background";
+import NeuralBackground from "@/app/Intro_Components/UI_21stDev_Component/flow-field-background";
 import Link from "next/link";
 
 
@@ -78,7 +78,7 @@ function LoginForm({ onRegister, onForgot }: { onRegister: () => void; onForgot:
     }
 
     // Login succeeded — redirect to the dashboard
-    router.push("/dashboard");
+    router.push("/MainDashboard_Component");
   }
 
   return (

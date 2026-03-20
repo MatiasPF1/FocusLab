@@ -4,8 +4,12 @@ import type { NextAuthConfig } from "next-auth";
 // Used exclusively by middleware to check JWT session tokens.
 export const authConfig: NextAuthConfig = {
   pages: {
-    signIn: "/auth",
+    signIn: "/Authentication_Component", // Redirect to this page for sign-in
   },
+
+
+
+
   callbacks: {
     // Called on every request matched by the middleware.
     // Returns true (allow) or false/redirect (block).
