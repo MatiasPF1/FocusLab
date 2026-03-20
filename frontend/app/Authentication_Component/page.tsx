@@ -4,21 +4,26 @@ import { useRouter } from "next/navigation";   // to redirect after successful l
 import { signIn } from "next-auth/react";       // NextAuth's client-side login function
 import NeuralBackground from "@/app/UI_21stDev/flow-field-background";
 import Link from "next/link";
+import SetupPage from "./SetupPage";
 
 
 // Typescript types
-type View = "login" | "register" | "forgot-password"; 
+type View = "login" | "register" | "forgot-password" | "setup";
 
 
 export default function AuthPage() {
   const [view, setView] = useState<View>("login"); // State to track which view is currently active, default is "login"
+
+  // After authentication, show the setup page
+  if (view === "setup") return <SetupPage />;
+
   // Authentication Holder for all the forms (Login, Register, Forgot Password)
   return (
     <div className="relative h-screen w-screen bg-black text-white flex items-center justify-center overflow-hidden">
       <NeuralBackground color="#818cf8" trailOpacity={0.1} speed={0.8} />
       <div className="z-10 relative w-full max-w-sm px-6">
-        {view === "login" && <LoginForm onRegister={() => setView("register")} onForgot={() => setView("forgot-password")} />}
-        {view === "register" && <RegisterForm onLogin={() => setView("login")} />}
+        {view === "login" && <LoginForm onRegister={() => setView("register")} onForgot={() => setView("forgot-password")} onSuccess={() => setView("setup")} />}
+        {view === "register" && <RegisterForm onLogin={() => setView("login")} onSetup={() => setView("setup")} />}
         {view === "forgot-password" && <ForgotPasswordForm onBack={() => setView("login")} />}
       </div>
     </div>
@@ -51,7 +56,7 @@ function InputField({ label, type = "text", placeholder, value, onChange }: {
 
 
 //2-Login Form
-function LoginForm({ onRegister, onForgot }: { onRegister: () => void; onForgot: () => void }) {
+function LoginForm({ onRegister, onForgot, onSuccess }: { onRegister: () => void; onForgot: () => void; onSuccess: () => void }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -77,8 +82,8 @@ function LoginForm({ onRegister, onForgot }: { onRegister: () => void; onForgot:
       return;
     }
 
-    // Login succeeded — redirect to the dashboard
-    router.push("/MainDashboard_Component");
+    // Login succeeded — show setup page
+    onSuccess();
   }
 
   return (
@@ -123,7 +128,7 @@ function LoginForm({ onRegister, onForgot }: { onRegister: () => void; onForgot:
 
 
 //3-Registration Form
-function RegisterForm({ onLogin }: { onLogin: () => void }) {
+function RegisterForm({ onLogin, onSetup }: { onLogin: () => void; onSetup: () => void }) {
   // One state variable per field
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -154,16 +159,24 @@ function RegisterForm({ onLogin }: { onLogin: () => void }) {
       body: JSON.stringify({ name, email, password }),
     });
     const data = await res.json();
-    setLoading(false);
 
     if (!res.ok) {
-      // Show error from the API (e.g. "Email already in use.")
+      setLoading(false);
       setError(data.error);
       return;
     }
 
-    // Success — switch to login so the user can sign in
-    onLogin();
+    // New account created — auto sign-in so the session is ready, then show setup
+    const result = await signIn("credentials", { email, password, redirect: false });
+    setLoading(false);
+
+    if (result?.error) {
+      // Registration succeeded but auto sign-in failed — fall back to manual login
+      onLogin();
+      return;
+    }
+
+    onSetup();
   }
 
   return (
