@@ -1,4 +1,4 @@
-import NeuralBackground from "@/app/UI_21stDev/flow-field-background";
+import NeuralBackground from "@/app/UI_21stDev_components/flow-field-background";
 import Link from "next/link";
 
 export default function LoginPage() {
@@ -20,7 +20,7 @@ export default function LoginPage() {
           Centralized platform for productivity and organization<br />
           to help you stay focused, created by students, for students.
         </p>
-        <Link href="/auth" className="pointer-events-auto inline-block mt-4 px-8 py-3 bg-white text-black font-semibold rounded-full hover:bg-white/90 transition-colors">
+        <Link href="/MainDashboard_Component" className="pointer-events-auto inline-block mt-4 px-8 py-3 bg-white text-black font-semibold rounded-full hover:bg-white/90 transition-colors">
           Get Started
         </Link>
       </div>
