@@ -1,6 +1,5 @@
 # 🎯 FocusLab
 
-> 🚧 **Under Construction** 🚧
 
 A centralized platform for productivity and organization to help you stay focused, created by students, for students.
 
@@ -21,14 +20,13 @@ FocusLab is a modern web application designed to help students manage their acad
 - **Framework:** Next.js 16
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS
-- **3D Graphics:** Three.js
 
 ## Project Structure
 
 ```
 FocusLab/
 ├── frontend/   # Next.js app (UI, API routes, database logic)
-└── backend/    # Reserved for a dedicated backend server (future)
+└── backend/    # Reserved for a dedicated backend server 
 ```
 
 ## Getting Started
