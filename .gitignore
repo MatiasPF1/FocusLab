@@ -42,3 +42,14 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 /generated
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# database
+database/
+*.db
+*.sqlite3

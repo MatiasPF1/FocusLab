@@ -31,16 +31,24 @@ FocusLab/
 
 ## Getting Started
 
-```bash
-# Install dependencies
-cd frontend
-npm install
+Requires [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running.
 
-# Run development server
-npm run dev
+```bash
+# From the FocusLab root folder
+
+# 1. Build the images (first run only — downloads Node/Python and installs deps)
+docker compose build --progress=plain
+
+# 2. Start both services
+docker compose up
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the app.
+- Frontend: [http://localhost:3000](http://localhost:3000)
+- Backend: [http://localhost:8000](http://localhost:8000)
+
+Subsequent runs only need `docker compose up` (add `--build` if dependencies changed).
+
+Stop the stack with `Ctrl + C`, or `docker compose down` to remove the containers.
 
 ## Contributing
 
