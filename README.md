@@ -14,19 +14,30 @@ FocusLab is a modern web application designed to help students manage their acad
 - 📅 Study schedule planner
 - 📊 Progress tracking
 - 🎯 Goal setting
+- 🎵 Spotify-connected focus queues — save your own ordered playlists ("Deep Focus", "Study Break", ...) and start them playing on Spotify right from FocusLab
 
 ## Tech Stack
 
+**Frontend**
 - **Framework:** Next.js 16
 - **Language:** TypeScript
 - **Styling:** Tailwind CSS
+
+**Backend**
+- **Framework:** FastAPI (Python)
+- **Database:** SQLite via SQLModel
+- **HTTP client:** httpx (used for Spotify's OAuth + Web API calls)
+- **Integration:** Spotify Web API (OAuth 2.0 login, playback control)
+
+**Infra**
+- Docker & Docker Compose (one command spins up frontend + backend together)
 
 ## Project Structure
 
 ```
 FocusLab/
-├── frontend/   # Next.js app (UI, API routes, database logic)
-└── backend/    # Reserved for a dedicated backend server 
+├── frontend/   # Next.js app (UI, API routes)
+└── backend/    # FastAPI server (Spotify OAuth, queues, database)
 ```
 
 ## Getting Started
