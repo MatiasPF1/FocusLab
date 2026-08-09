@@ -93,29 +93,29 @@ export default function PomodoroTimer() {
   // #####################################################################################################################################################################################################
 
   return (
-    <div className="mt-6 bg-white/5 border border-white/10 rounded-2xl p-10 flex flex-col items-center w-full">
-      <span className="text-7xl font-bold tabular-nums">
+    <div className="mt-6 bg-stone-900/60 border border-stone-800 rounded-2xl p-10 flex flex-col items-center w-full">
+      <span className="text-7xl font-bold tabular-nums text-stone-100">
         {formatTime(secondsLeft)}
       </span>
-      <span className="text-xs text-white/40 tracking-widest mt-2">
-        {secondsLeft > 0 ? "TIME TO FOCUS!!" : "SESSION COMPLETE"}
+      <span className="text-xs text-stone-500 tracking-widest mt-2">
+        {secondsLeft > 0 ? "TIME TO FOCUS" : "SESSION COMPLETE"}
       </span>
       <div className="flex items-center gap-4 mt-6">
         <button
           onClick={skipBack}
-          className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/70"
+          className="w-10 h-10 rounded-full bg-stone-800 flex items-center justify-center text-stone-300 hover:bg-stone-700 transition-colors"
         >
           <SkipBack size={16} />
         </button>
         <button
           onClick={togglePlayPause}
-          className="w-14 h-14 rounded-full bg-indigo-500 flex items-center justify-center text-white"
+          className="w-14 h-14 rounded-full bg-indigo-400 flex items-center justify-center text-stone-950 hover:bg-indigo-300 transition-colors"
         >
           {isRunning ? <Pause size={20} /> : <Play size={20} />}
         </button>
         <button
           onClick={skipForward}
-          className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white/70"
+          className="w-10 h-10 rounded-full bg-stone-800 flex items-center justify-center text-stone-300 hover:bg-stone-700 transition-colors"
         >
           <SkipForward size={16} />
         </button>
@@ -127,10 +127,10 @@ export default function PomodoroTimer() {
           <button
             key={option}
             onClick={() => selectPreset(option)}
-            className={`px-4 py-1.5 rounded-full text-xs font-semibold capitalize ${
+            className={`px-4 py-1.5 rounded-full text-xs font-semibold capitalize transition-colors ${
               preset === option
-                ? "bg-indigo-500 text-white"
-                : "bg-white/10 text-white/60"
+                ? "bg-indigo-400 text-stone-950"
+                : "bg-stone-800 text-stone-400 hover:text-stone-200"
             }`}
           >
             {option === "custom" ? "Custom" : `${option}m`}
@@ -144,7 +144,7 @@ export default function PomodoroTimer() {
           min={1}
           value={customMinutes}
           onChange={(e) => handleCustomMinutesChange(e.target.valueAsNumber)}
-          className="mt-3 w-24 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5 text-sm text-center focus:outline-none focus:border-indigo-400/60"
+          className="mt-3 w-24 bg-stone-900 border border-stone-800 rounded-lg px-3 py-1.5 text-sm text-center text-stone-200 focus:outline-none focus:border-indigo-400/60"
         />
       )}
     </div>

@@ -151,7 +151,7 @@ export default function NeuralBackground({
       // This creates the "Trails" look.
       // We use the background color of the parent or a dark overlay.
       // Assuming dark mode for this effect usually:
-      ctx.fillStyle = `rgba(0, 0, 0, ${trailOpacity})`; 
+      ctx.fillStyle = `rgba(12, 10, 9, ${trailOpacity})`;
       ctx.fillRect(0, 0, width, height);
 
       particles.forEach((p) => {
@@ -197,7 +197,7 @@ export default function NeuralBackground({
   }, [color, trailOpacity, particleCount, speed]);
 
   return (
-    <div ref={containerRef} className={cn("absolute inset-0 w-full h-full bg-black overflow-hidden", className)}>
+    <div ref={containerRef} className={cn("absolute inset-0 w-full h-full bg-stone-950 overflow-hidden", className)}>
       <canvas ref={canvasRef} className="block w-full h-full" />
     </div>
   );
