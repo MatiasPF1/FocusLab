@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   Plus,
   Music2,
+  ListMusic,
   Trash2,
   Search,
   X,
@@ -49,7 +50,15 @@ type PlayerState = {
   track_uri: string | null;
   track_name: string | null;
   artist_name: string | null;
+  image_url: string | null;
   device_name: string | null;
+};
+
+// One entry from the account's real Spotify listening history.
+type RecentlyPlayedTrack = {
+  track_uri: string;
+  track_name: string;
+  artist_name: string;
 };
 
 export default function PlaylistSection() {
@@ -73,6 +82,9 @@ export default function PlaylistSection() {
 
   // What Spotify is currently playing
   const [player, setPlayer] = useState<PlayerState | null>(null);
+
+  // The account's real listening history, shown underneath the queue list.
+  const [recentlyPlayed, setRecentlyPlayed] = useState<RecentlyPlayedTrack[]>([]);
 
   /*
    * Registers this tab as a Spotify device, so music plays out of FocusLab and
@@ -113,9 +125,13 @@ export default function PlaylistSection() {
     };
   }, []);
 
-  // Keep the player controls in step with Spotify while a queue is open.
+  /*
+   * Keep the Now Playing card in step with Spotify. This runs for the whole
+   * panel, not just while a queue is open, since the card sits above the
+   * queue list and stays visible whichever queue (if any) is expanded.
+   */
   useEffect(() => {
-    if (openQueueId === null) return;
+    if (connected !== true) return;
 
     let cancelled = false;
 
@@ -139,7 +155,32 @@ export default function PlaylistSection() {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [openQueueId]);
+  }, [connected]);
+
+  /*
+   * Load the account's real listening history once, after we know Spotify is
+   * connected. Older connections made before this feature existed will not
+   * have granted the recently-played scope yet, so a failure here just means
+   * an empty list rather than an error worth showing.
+   */
+  useEffect(() => {
+    if (connected !== true) return;
+
+    let cancelled = false;
+
+    fetch(`${API_URL}/spotify/recently-played`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (!cancelled) setRecentlyPlayed(data);
+      })
+      .catch(() => {
+        // Silent: this list is a nice-to-have, not core functionality.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [connected]);
 
   function handleConnectSpotify() {
     window.location.href = `${API_URL}/spotify/login`;
@@ -213,23 +254,19 @@ export default function PlaylistSection() {
     playerCommand(`/queues/${openQueueId}/play?position=${position}`, "POST");
   }
 
-  function togglePlayPause() {
+  /*
+   * The Now Playing card's button only renders once player.track_name exists
+   * (see the JSX below), so by the time this can be clicked Spotify always has
+   * a track loaded — either playing or paused. That makes the choice a plain
+   * pause/resume with no "what should play" ambiguity to resolve here.
+   * Starting a specific song from scratch is instead done by clicking that
+   * song's row inside an expanded queue, which calls playQueue directly.
+   */
+  function toggleGlobalPlayback() {
     if (player?.is_playing) {
       playerCommand("/spotify/pause", "PUT");
-      return;
-    }
-    /*
-     * Resuming only makes sense when Spotify is already paused on a song from
-     * the queue on screen. Otherwise there is nothing of this queue to resume,
-     * so the play button starts it from the top instead.
-     */
-    const pausedInThisQueue = tracks.some(
-      (track) => track.track_uri === player?.track_uri,
-    );
-    if (pausedInThisQueue) {
-      playerCommand("/spotify/resume", "PUT");
     } else {
-      playQueue(1);
+      playerCommand("/spotify/resume", "PUT");
     }
   }
 
@@ -368,61 +405,21 @@ export default function PlaylistSection() {
   }
 
   return (
-    <div className="mt-6 bg-stone-900/60 border border-stone-800 rounded-2xl p-6 flex flex-col w-full text-left">
+    <div className="bg-ob-surface border border-ob-line/60 rounded-2xl p-6 flex flex-col w-full text-left">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-stone-100">Playlists:</h3>
+        <h3 className="text-lg font-semibold text-ob-mist">Queues</h3>
         {connected ? (
-          <button
-            onClick={() => {
-              setError(null);
-              setNewName("");
-              setAdding(true);
-            }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-indigo-400 text-stone-950 hover:bg-indigo-300 transition-colors"
-          >
-            <Plus size={14} />
-            Add Queue
-          </button>
+          <ListMusic size={16} className="text-ob-slate" aria-hidden="true" />
         ) : (
           <button
             onClick={handleConnectSpotify}
             disabled={connected === null}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-green-500 text-stone-950 hover:bg-green-400 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-green-500 text-ob-void hover:bg-green-400 transition-colors disabled:opacity-50"
           >
             Connect Spotify
           </button>
         )}
       </div>
-
-      {/* Name input, only visible right after "Add Queue" is clicked */}
-      {adding && (
-        <div className="mt-4 flex items-center gap-2">
-          <input
-            autoFocus
-            value={newName}
-            onChange={(event) => setNewName(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") createQueue();
-              if (event.key === "Escape") setAdding(false);
-            }}
-            placeholder="Queue name"
-            className="flex-1 bg-stone-950 border border-stone-700 rounded-lg px-3 py-1.5 text-sm text-stone-100 placeholder:text-stone-600 focus:outline-none focus:border-indigo-400"
-          />
-          <button
-            onClick={createQueue}
-            disabled={saving || !newName.trim()}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-400 text-stone-950 hover:bg-indigo-300 transition-colors disabled:opacity-50"
-          >
-            {saving ? "Saving..." : "Save"}
-          </button>
-          <button
-            onClick={() => setAdding(false)}
-            className="px-3 py-1.5 rounded-lg text-xs font-semibold text-stone-400 hover:text-stone-200 transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
-      )}
 
       {/* A failed command matters more than a player that never started */}
       {(error || playerError) && (
@@ -431,99 +428,120 @@ export default function PlaylistSection() {
 
       {/* Says why playing is not possible for the first few seconds after load */}
       {connected && !webPlayerId && !playerError && (
-        <p className="mt-3 text-xs text-stone-500">
+        <p className="mt-3 text-xs text-ob-slate">
           Starting the FocusLab player...
         </p>
       )}
 
-      {queues.length > 0 ? (
+      {/*
+        Now Playing: global, not scoped to whichever queue is expanded (or
+        whether one is expanded at all), since Spotify's own playback state
+        is a single thing regardless of which queue panel is open here.
+      */}
+      {player?.track_name && (
+        <div className="mt-4 bg-ob-base border border-ob-line/60 rounded-xl p-3 flex items-center gap-3">
+          {player.image_url ? (
+            <img
+              src={player.image_url}
+              alt=""
+              className="w-12 h-12 rounded-lg object-cover shrink-0"
+            />
+          ) : (
+            <div className="w-12 h-12 rounded-lg bg-ob-raised flex items-center justify-center shrink-0">
+              <Music2 size={18} className="text-ob-slate" />
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-ob-mist truncate">
+              {player.track_name}
+            </p>
+            <p className="text-xs text-ob-slate truncate">
+              {player.artist_name}
+              {player.device_name ? ` · ${player.device_name}` : ""}
+            </p>
+            {/* Decorative only: there is no progress data to show, just that audio is flowing */}
+            {player.is_playing && (
+              <div className="flex items-end gap-0.5 h-2.5 mt-1.5" aria-hidden="true">
+                <span className="w-0.5 h-full bg-ob-slate animate-pulse" />
+                <span className="w-0.5 h-1.5 bg-ob-slate animate-pulse [animation-delay:150ms]" />
+                <span className="w-0.5 h-2.5 bg-ob-slate animate-pulse [animation-delay:300ms]" />
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              onClick={() => playerCommand("/spotify/previous", "POST")}
+              aria-label="Previous song"
+              className="text-ob-slate hover:text-ob-mist transition-colors"
+            >
+              <SkipBack size={15} />
+            </button>
+            <button
+              onClick={toggleGlobalPlayback}
+              aria-label={player.is_playing ? "Pause" : "Play"}
+              className="flex items-center justify-center w-8 h-8 rounded-full bg-ob-mist text-ob-void hover:bg-white transition-colors"
+            >
+              {player.is_playing ? (
+                <Pause size={14} fill="currentColor" />
+              ) : (
+                <Play size={14} fill="currentColor" />
+              )}
+            </button>
+            <button
+              onClick={() => playerCommand("/spotify/next", "POST")}
+              aria-label="Next song"
+              className="text-ob-slate hover:text-ob-mist transition-colors"
+            >
+              <SkipForward size={15} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {queues.length > 0 && (
         <ul className="mt-4 flex flex-col gap-2">
           {queues.map((queue) => (
             <li
               key={queue.id}
-              className="bg-stone-950/60 border border-stone-800 rounded-xl overflow-hidden"
+              className="bg-ob-base/60 border border-ob-line/60 rounded-xl overflow-hidden"
             >
-              <div className="group flex items-center gap-2 px-4 py-2.5 hover:bg-stone-900/50 transition-colors">
+              <div className="group flex items-center gap-3 px-3 py-2.5 hover:bg-ob-raised/50 transition-colors">
                 {/* The whole row is the click target, so the queue is obviously openable */}
                 <button
                   onClick={() => toggleQueue(queue.id)}
                   aria-expanded={openQueueId === queue.id}
-                  className="flex flex-1 items-center gap-2 min-w-0 text-sm text-stone-200 hover:text-white transition-colors"
+                  className="flex flex-1 items-center gap-3 min-w-0 text-sm text-ob-mist hover:text-white transition-colors"
                 >
-                  {/* Chevron points right when closed, down when open */}
-                  <ChevronRight
-                    size={14}
-                    className={`text-stone-500 shrink-0 transition-transform ${
-                      openQueueId === queue.id ? "rotate-90" : ""
-                    }`}
-                  />
-                  <Music2 size={14} className="text-stone-500 shrink-0" />
-                  <span className="truncate">{queue.name}</span>
-                  {/* Spells out what clicking does, since an empty queue looks inert otherwise */}
-                  {openQueueId !== queue.id && (
-                    <span className="ml-auto text-xs text-stone-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                      Add songs
-                    </span>
-                  )}
+                  <span className="w-8 h-8 rounded-lg bg-ob-raised flex items-center justify-center shrink-0">
+                    <Music2 size={14} className="text-ob-slate" />
+                  </span>
+                  <span className="truncate font-medium">{queue.name}</span>
                 </button>
                 <button
                   onClick={() => deleteQueue(queue.id)}
                   aria-label={`Delete ${queue.name}`}
-                  className="text-stone-600 opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all shrink-0"
+                  className="text-ob-slate opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all shrink-0"
                 >
                   <Trash2 size={14} />
                 </button>
+                {/* Chevron points right when closed, down when open */}
+                <ChevronRight
+                  size={14}
+                  className={`text-ob-slate shrink-0 transition-transform ${
+                    openQueueId === queue.id ? "rotate-90" : ""
+                  }`}
+                />
               </div>
 
               {/* Songs and the Spotify search box for the queue that is open */}
               {openQueueId === queue.id && (
-                <div className="border-t border-stone-800 px-4 py-3 flex flex-col gap-3">
-                  {/* Transport controls. Skipping never changes the saved queue. */}
-                  {tracks.length > 0 && (
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => playerCommand("/spotify/previous", "POST")}
-                        aria-label="Previous song"
-                        className="text-stone-400 hover:text-stone-100 transition-colors"
-                      >
-                        <SkipBack size={16} />
-                      </button>
-                      <button
-                        onClick={togglePlayPause}
-                        aria-label={player?.is_playing ? "Pause" : "Play"}
-                        className="flex items-center justify-center w-8 h-8 rounded-full bg-indigo-400 text-stone-950 hover:bg-indigo-300 transition-colors"
-                      >
-                        {player?.is_playing ? (
-                          <Pause size={15} />
-                        ) : (
-                          <Play size={15} />
-                        )}
-                      </button>
-                      <button
-                        onClick={() => playerCommand("/spotify/next", "POST")}
-                        aria-label="Next song"
-                        className="text-stone-400 hover:text-stone-100 transition-colors"
-                      >
-                        <SkipForward size={16} />
-                      </button>
-
-                      {/* Now playing, including which device the sound comes out of */}
-                      <span className="text-xs text-stone-500 truncate ml-1">
-                        {player?.track_name
-                          ? `${player.track_name} — ${player.artist_name ?? ""}${
-                              player.device_name ? ` · ${player.device_name}` : ""
-                            }`
-                          : "Nothing playing"}
-                      </span>
-                    </div>
-                  )}
-
+                <div className="border-t border-ob-line/60 px-4 py-3 flex flex-col gap-3">
                   {tracks.length > 0 ? (
                     <ul className="flex flex-col gap-1">
                       {tracks.map((track) => (
                         <li
                           key={track.id}
-                          className="group/track flex items-center justify-between text-sm text-stone-300 py-1"
+                          className="group/track flex items-center justify-between text-sm text-ob-mist py-1"
                         >
                           {/* The row number turns into a play button on hover */}
                           <button
@@ -532,23 +550,23 @@ export default function PlaylistSection() {
                             className="flex items-center gap-2 min-w-0 text-left"
                           >
                             <span className="w-4 shrink-0 flex justify-end">
-                              <span className="text-stone-600 tabular-nums group-hover/track:hidden">
+                              <span className="text-ob-slate tabular-nums group-hover/track:hidden">
                                 {track.position}
                               </span>
                               <Play
                                 size={12}
-                                className="hidden group-hover/track:block text-indigo-400"
+                                className="hidden group-hover/track:block text-ob-mist"
                               />
                             </span>
                             <span
                               className={`truncate ${
                                 player?.track_uri === track.track_uri
-                                  ? "text-indigo-300"
+                                  ? "text-ob-mist"
                                   : ""
                               }`}
                             >
                               {track.track_name}
-                              <span className="text-stone-500">
+                              <span className="text-ob-slate">
                                 {" "}
                                 — {track.artist_name}
                               </span>
@@ -558,7 +576,7 @@ export default function PlaylistSection() {
                             onClick={() => removeTrack(track.id)}
                             aria-label={`Remove ${track.track_name} from this queue permanently`}
                             title="Remove from queue permanently"
-                            className="text-stone-600 opacity-0 group-hover/track:opacity-100 hover:text-red-400 transition-all shrink-0 ml-2"
+                            className="text-ob-slate opacity-0 group-hover/track:opacity-100 hover:text-red-400 transition-all shrink-0 ml-2"
                           >
                             <X size={14} />
                           </button>
@@ -566,7 +584,7 @@ export default function PlaylistSection() {
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-xs text-stone-500">
+                    <p className="text-xs text-ob-slate">
                       No songs in this queue yet.
                     </p>
                   )}
@@ -579,12 +597,12 @@ export default function PlaylistSection() {
                         if (event.key === "Enter") searchSpotify();
                       }}
                       placeholder="Search Spotify for a song"
-                      className="flex-1 bg-stone-950 border border-stone-700 rounded-lg px-3 py-1.5 text-sm text-stone-100 placeholder:text-stone-600 focus:outline-none focus:border-indigo-400"
+                      className="flex-1 bg-ob-base border border-ob-line rounded-lg px-3 py-1.5 text-sm text-ob-mist placeholder:text-ob-slate focus:outline-none focus:border-ob-slate"
                     />
                     <button
                       onClick={searchSpotify}
                       disabled={searching || !query.trim()}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-stone-800 text-stone-200 hover:bg-stone-700 transition-colors disabled:opacity-50"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-ob-raised text-ob-mist hover:bg-ob-line transition-colors disabled:opacity-50"
                     >
                       <Search size={13} />
                       {searching ? "..." : "Search"}
@@ -598,12 +616,12 @@ export default function PlaylistSection() {
                         <li key={result.track_uri}>
                           <button
                             onClick={() => addTrack(result)}
-                            className="w-full flex items-center gap-2 text-left px-2 py-1.5 rounded-lg hover:bg-stone-800/70 transition-colors"
+                            className="w-full flex items-center gap-2 text-left px-2 py-1.5 rounded-lg hover:bg-ob-raised/70 transition-colors"
                           >
-                            <Plus size={13} className="text-indigo-400 shrink-0" />
-                            <span className="text-sm text-stone-300 truncate">
+                            <Plus size={13} className="text-ob-mist shrink-0" />
+                            <span className="text-sm text-ob-mist truncate">
                               {result.track_name}
-                              <span className="text-stone-500">
+                              <span className="text-ob-slate">
                                 {" "}
                                 — {result.artist_name}
                               </span>
@@ -618,15 +636,83 @@ export default function PlaylistSection() {
             </li>
           ))}
         </ul>
-      ) : (
-        !adding && (
-          <div className="mt-4 flex flex-col items-center justify-center py-8 text-stone-500 text-sm gap-2">
-            <Music2 size={24} className="text-stone-600" />
-            {connected
-              ? "No queues added yet."
-              : "Connect Spotify to start adding queues."}
+      )}
+
+      {/*
+        The primary "create" action lives here rather than in the header, so it
+        also anchors the panel when there are no queues yet instead of leaving
+        an empty space above a lone header icon.
+      */}
+      {connected &&
+        (adding ? (
+          <div className="mt-3 flex items-center gap-2">
+            <input
+              autoFocus
+              value={newName}
+              onChange={(event) => setNewName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") createQueue();
+                if (event.key === "Escape") setAdding(false);
+              }}
+              placeholder="Queue name"
+              className="flex-1 bg-ob-base border border-ob-line rounded-lg px-3 py-1.5 text-sm text-ob-mist placeholder:text-ob-slate focus:outline-none focus:border-ob-slate"
+            />
+            <button
+              onClick={createQueue}
+              disabled={saving || !newName.trim()}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-ob-mist text-ob-void hover:bg-white transition-colors disabled:opacity-50"
+            >
+              {saving ? "Saving..." : "Save"}
+            </button>
+            <button
+              onClick={() => setAdding(false)}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold text-ob-slate hover:text-ob-mist transition-colors"
+            >
+              Cancel
+            </button>
           </div>
-        )
+        ) : (
+          <button
+            onClick={() => {
+              setError(null);
+              setNewName("");
+              setAdding(true);
+            }}
+            className="mt-3 flex items-center gap-2 px-3 py-2.5 rounded-xl border border-dashed border-ob-line text-ob-slate hover:text-ob-mist hover:border-ob-slate transition-colors text-sm"
+          >
+            <Plus size={14} />
+            Create New Queue
+          </button>
+        ))}
+
+      {!connected && queues.length === 0 && (
+        <p className="mt-4 text-xs text-ob-slate text-center py-4">
+          Connect Spotify to start adding queues.
+        </p>
+      )}
+
+      {/* The account's real listening history, independent of any saved queue */}
+      {recentlyPlayed.length > 0 && (
+        <div className="mt-6">
+          <h4 className="text-[11px] font-semibold text-ob-slate tracking-[0.2em]">
+            RECENTLY PLAYED
+          </h4>
+          <ul className="mt-2.5 flex flex-col gap-1.5">
+            {recentlyPlayed.map((track) => (
+              <li
+                key={track.track_uri}
+                className="flex items-center gap-2 text-sm text-ob-slate min-w-0"
+              >
+                <span className="w-1 h-1 rounded-full bg-ob-slate shrink-0" />
+                <span className="truncate">
+                  <span className="text-ob-mist">{track.track_name}</span>
+                  {" — "}
+                  {track.artist_name}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );

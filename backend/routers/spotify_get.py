@@ -36,13 +36,14 @@ from routers.spotify import (
 ##########
 
 '''
-/spotify/status     --> (Says whether Spotify is connected right now)
-/spotify/player     --> (Reports which song is playing and on which device)
-/spotify/token      --> (Hands the browser an access token for its own player)
-/spotify/devices    --> (Lists every Spotify app this account can play on)
-/spotify/search     --> (Searches Spotify's catalogue for songs to add)
-/spotify/login      --> (Starts the Spotify permission flow)
-/spotify/callback   --> (Receives Spotify's answer and saves the tokens)
+/spotify/status           --> (Says whether Spotify is connected right now)
+/spotify/player           --> (Reports which song is playing and on which device)
+/spotify/token            --> (Hands the browser an access token for its own player)
+/spotify/devices          --> (Lists every Spotify app this account can play on)
+/spotify/search           --> (Searches Spotify's catalogue for songs to add)
+/spotify/recently-played  --> (Lists the last few songs actually listened to)
+/spotify/login            --> (Starts the Spotify permission flow)
+/spotify/callback         --> (Receives Spotify's answer and saves the tokens)
 '''
 
 
@@ -89,6 +90,7 @@ async def get_player_state(session: Session = Depends(get_session)):
             "track_uri": None,
             "track_name": None,
             "artist_name": None,
+            "image_url": None,
             "device_name": None,
         }
 
@@ -99,11 +101,14 @@ async def get_player_state(session: Session = Depends(get_session)):
         for artist in item.get("artists", [])
         if artist.get("name")
     )
+    #3.1-)Spotify lists images largest first, so the last one is the thumbnail
+    images = (item.get("album") or {}).get("images") or []
     return {
         "is_playing": bool(data.get("is_playing")),
         "track_uri": item.get("uri"),
         "track_name": item.get("name"),
         "artist_name": artists or None,
+        "image_url": images[-1].get("url") if images else None,
         "device_name": (data.get("device") or {}).get("name"),
     }
 
@@ -204,6 +209,54 @@ async def search_tracks(
     return results
 
 
+@router.get("/recently-played")
+async def get_recently_played(
+    limit: int = 5,
+    session: Session = Depends(get_session),
+):
+    '''
+    1-Ask Spotify for the account's actual listening history
+    2-Keep only the fields the UI needs, oldest duplicates aside
+    3-Return the trimmed list
+
+    Requires the user-read-recently-played scope, which older connections made
+    before this route existed will not have. Spotify answers a plain 403 for
+    that, which spotify_api_request already turns into a normal HTTP error —
+    the frontend treats a failed fetch here as "nothing to show" rather than
+    a scary error, since this list is a nice-to-have, not core functionality.
+    '''
+    #1-)Spotify allows at most 50 entries per request; this panel needs a handful
+    limit = max(1, min(limit, 50))
+    data = await spotify_api_get(
+        session,
+        "/me/player/recently-played",
+        {"limit": limit},
+    )
+
+    #2-)Same song played twice in a row would otherwise show up as two rows
+    seen_uris: set[str] = set()
+    results = []
+    for entry in data.get("items", []):
+        track = entry.get("track") or {}
+        track_uri = track.get("uri")
+        if not track_uri or track_uri in seen_uris:
+            continue
+        seen_uris.add(track_uri)
+
+        artists = ", ".join(
+            artist["name"]
+            for artist in track.get("artists", [])
+            if artist.get("name")
+        )
+        results.append({
+            "track_uri": track_uri,
+            "track_name": track.get("name") or "Untitled track",
+            "artist_name": artists or "Unknown artist",
+        })
+    #3-)Return the trimmed, de-duplicated list
+    return results
+
+
 @router.get("/login")
 async def spotify_login():
     '''
@@ -224,6 +277,7 @@ async def spotify_login():
         "user-read-email",
         "user-read-playback-state",
         "user-modify-playback-state",
+        "user-read-recently-played",
         "streaming",
     ]
     #2.1-)Information Spotify needs for the authorization request

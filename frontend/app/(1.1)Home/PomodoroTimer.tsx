@@ -93,44 +93,53 @@ export default function PomodoroTimer() {
   // #####################################################################################################################################################################################################
 
   return (
-    <div className="mt-6 bg-stone-900/60 border border-stone-800 rounded-2xl p-10 flex flex-col items-center w-full">
-      <span className="text-7xl font-bold tabular-nums text-stone-100">
+    <div className="mt-6 bg-ob-surface border border-ob-line/60 rounded-2xl p-12 flex flex-col items-center w-full">
+      {/* The clock carries the whole card, so it is sized to dominate it */}
+      <span className="text-8xl font-extrabold tabular-nums tracking-tight text-ob-mist leading-none">
         {formatTime(secondsLeft)}
       </span>
-      <span className="text-xs text-stone-500 tracking-widest mt-2">
+      <span className="text-[11px] font-semibold text-ob-slate tracking-[0.28em] mt-4">
         {secondsLeft > 0 ? "TIME TO FOCUS" : "SESSION COMPLETE"}
       </span>
-      <div className="flex items-center gap-4 mt-6">
+
+      {/*
+        Skip controls stay quiet so the single light button reads as the one
+        thing to press, the same way the mockup weights them.
+      */}
+      <div className="flex items-center gap-7 mt-9">
         <button
           onClick={skipBack}
-          className="w-10 h-10 rounded-full bg-stone-800 flex items-center justify-center text-stone-300 hover:bg-stone-700 transition-colors"
+          aria-label="Restart this session"
+          className="text-ob-slate hover:text-ob-mist transition-colors"
         >
-          <SkipBack size={16} />
+          <SkipBack size={18} />
         </button>
         <button
           onClick={togglePlayPause}
-          className="w-14 h-14 rounded-full bg-indigo-400 flex items-center justify-center text-stone-950 hover:bg-indigo-300 transition-colors"
+          aria-label={isRunning ? "Pause" : "Start"}
+          className="w-16 h-16 rounded-2xl bg-ob-mist flex items-center justify-center text-ob-void shadow-lg shadow-black/30 hover:bg-white transition-colors"
         >
-          {isRunning ? <Pause size={20} /> : <Play size={20} />}
+          {isRunning ? <Pause size={22} fill="currentColor" /> : <Play size={22} fill="currentColor" />}
         </button>
         <button
           onClick={skipForward}
-          className="w-10 h-10 rounded-full bg-stone-800 flex items-center justify-center text-stone-300 hover:bg-stone-700 transition-colors"
+          aria-label="End this session"
+          className="text-ob-slate hover:text-ob-mist transition-colors"
         >
-          <SkipForward size={16} />
+          <SkipForward size={18} />
         </button>
       </div>
 
       {/* Session length picker: 5 / 15 / 25 minutes, or a custom value */}
-      <div className="flex items-center gap-2 mt-8">
+      <div className="flex items-center gap-2 mt-10">
         {PRESETS.map((option) => (
           <button
             key={option}
             onClick={() => selectPreset(option)}
-            className={`px-4 py-1.5 rounded-full text-xs font-semibold capitalize transition-colors ${
+            className={`px-4 py-1.5 rounded-full text-xs font-semibold capitalize transition-colors border ${
               preset === option
-                ? "bg-indigo-400 text-stone-950"
-                : "bg-stone-800 text-stone-400 hover:text-stone-200"
+                ? "bg-ob-mist text-ob-void border-ob-mist"
+                : "border-ob-line text-ob-slate hover:text-ob-mist hover:border-ob-slate"
             }`}
           >
             {option === "custom" ? "Custom" : `${option}m`}
@@ -144,7 +153,7 @@ export default function PomodoroTimer() {
           min={1}
           value={customMinutes}
           onChange={(e) => handleCustomMinutesChange(e.target.valueAsNumber)}
-          className="mt-3 w-24 bg-stone-900 border border-stone-800 rounded-lg px-3 py-1.5 text-sm text-center text-stone-200 focus:outline-none focus:border-indigo-400/60"
+          className="mt-3 w-24 bg-ob-base border border-ob-line rounded-lg px-3 py-1.5 text-sm text-center text-ob-mist focus:outline-none focus:border-ob-slate"
         />
       )}
     </div>

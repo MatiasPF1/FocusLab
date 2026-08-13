@@ -17,10 +17,10 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-56 shrink-0 border-r border-stone-800 flex flex-col p-4 bg-stone-950">
+    <aside className="w-56 shrink-0 border-r border-ob-line/60 flex flex-col p-4 bg-ob-void">
       <div className="mb-8">
-        <h1 className="text-lg font-semibold text-stone-100">FocusLab</h1>
-        <p className="text-xs text-stone-500">The Digital Curator</p>
+        <h1 className="text-lg font-semibold text-ob-mist">FocusLab</h1>
+        <p className="text-xs text-ob-slate">The Digital Curator</p>
       </div>
       <nav className="flex flex-col gap-1">
         {NAV_ITEMS.map(({ label, icon: Icon, href }) => {
@@ -30,7 +30,9 @@ export default function Sidebar() {
               key={label}
               href={href}
               className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
-                active ? "bg-indigo-400/10 text-indigo-200" : "text-stone-400 hover:text-stone-200"
+                active
+                  ? "bg-ob-line/40 text-ob-mist"
+                  : "text-ob-slate hover:text-ob-mist"
               }`}
             >
               <Icon size={16} />
@@ -39,7 +41,7 @@ export default function Sidebar() {
           );
         })}
       </nav>
-      <div className="mt-auto flex flex-col gap-2 text-xs text-stone-500">
+      <div className="mt-auto flex flex-col gap-2 text-xs text-ob-slate">
         <span>Help</span>
         <span>Archive</span>
       </div>

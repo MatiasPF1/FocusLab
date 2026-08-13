@@ -7,14 +7,6 @@ from dotenv import load_dotenv
 
 from routers.database import create_db_and_tables
 
-'''
-Each resource owns one router, declared in routers/spotify.py and
-routers/queues.py, while its routes are written across a _get and a _post file.
-
-Importing those four modules is what runs their @router decorators and attaches
-the routes. They look unused because nothing calls them by name, so do not let
-an editor "clean up" these imports: without them both routers arrive empty.
-'''
 from routers import queues_get, queues_post, spotify_get, spotify_post  # noqa: F401
 from routers.queues import router as queues_router
 from routers.spotify import router as spotify_router
@@ -41,12 +33,6 @@ API. It is enforced by the browser, not by us.
 What it stops:
 -a page on some other site, open in the same browser, quietly
 calling this API in the background and reading the reply.
-
-What it does NOT stop: anything that is not a browser page. curl, a script, a
-phone or another app on the machine send no Origin header, so there is nothing
-for CORS to check and the request goes through untouched. CORS is not a lock on
-the API, and the only thing keeping this backend private is which network
-address it is published on.
 '''
 
 #2-)Which origins may read our answers. Comma separated in .env to add more.

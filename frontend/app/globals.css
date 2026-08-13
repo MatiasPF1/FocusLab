@@ -1,16 +1,28 @@
 @import "tailwindcss";
 
-@theme inline {
-  --color-primary: oklch(0.9 0 0);
-}
+/*
+  Midnight Obsidian
+  ----------------
+  Primary   #2C3E50   Secondary #4A5568
+  Tertiary  #D1D5DB   Neutral   #121212
 
-:root {
-  --background: 20 14% 4%;
-  --foreground: 0 0% 100%;
-  --primary: 0 0% 100%;
+  base / surface / raised are the Primary hue carried down into the dark end of
+  its ramp, so every panel sits on the same blue rather than on a neutral grey.
+*/
+@theme {
+  --color-ob-base: #0e141c;      /* page background        */
+  --color-ob-surface: #17212e;   /* cards and panels       */
+  --color-ob-raised: #1f2c3c;    /* nested blocks, hover   */
+  --color-ob-line: #2c3e50;      /* Primary   — borders    */
+  --color-ob-slate: #4a5568;     /* Secondary — muted text */
+  --color-ob-mist: #d1d5db;      /* Tertiary  — body text  */
+  --color-ob-void: #121212;      /* Neutral   — deepest    */
+
+  /* Kept for the landing page, which styles its copy with text-primary */
+  --color-primary: #d1d5db;
 }
 
 body {
-  background: #0c0a09;
-  color: white;
+  background: var(--color-ob-base);
+  color: var(--color-ob-mist);
 }
