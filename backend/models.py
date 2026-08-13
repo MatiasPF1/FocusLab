@@ -3,7 +3,7 @@ from sqlmodel import SQLModel, Field, Relationship
 
 
 #PK: Primary Key
-#FK: Foreign Key(Primary Key of other take
+#FK: Foreign Key(Primary Key of other take)
 
 ##########
 # Models For Spotify 
@@ -60,7 +60,11 @@ class Queue(SQLModel, table=True):
     name: str                                                           
     created_at: datetime = Field(default_factory=datetime.utcnow)         
     
-    tracks: list["QueueTrack"] = Relationship(back_populates="queue") # Relationship Type: one queue -> many tracks
+    # Relationship Type: one queue -> many tracks, always read back in playing order
+    tracks: list["QueueTrack"] = Relationship(
+        back_populates="queue",
+        sa_relationship_kwargs={"order_by": "QueueTrack.position"},
+    )
 
 
 
@@ -73,4 +77,72 @@ class QueueTrack(SQLModel, table=True):
     position: int
 
     queue: Queue = Relationship(back_populates="tracks")           # Relationship back to the parent queue
+
+
+##########
+# Model For Spotify tokens
+##########
+
+#   ┌──────────────────────────────┐
+#   │         SPOTIFYTOKEN         │
+#   ├──────────────┬─────────────┬─┤
+#   │ int          │ id          │PK│ "single-row table, always id=1"
+#   │ string       │ access_token│  │ "short-lived token used to call Spotify's API"
+#   │ string|None  │ refresh_token│ │ "long-lived token used to get new access tokens"
+#   │ float        │ expires_at  │  │ "unix timestamp when access_token expires"
+#   └──────────────┴─────────────┴──┘
+
+class SpotifyToken(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    access_token: str
+    refresh_token: str | None = None
+    expires_at: float = 0.0
+
+
+##########
+# Schemas (NOT tables) - shapes the API accepts and returns
+##########
+
+'''
+Table models above describe what the database stores.
+The schemas below describe what a request may send and what a response gives back,
+so clients can never set things like id or created_at themselves.
+'''
+
+class QueueCreate(SQLModel):
+    name: str                          # The only thing a client sends when creating a queue
+
+
+class QueueUpdate(SQLModel):
+    name: str                          # The only field a client is allowed to change
+
+
+class QueueTrackCreate(SQLModel):
+    '''
+    A song the user picked out of Spotify search results.
+    The position is decided by the backend (always appended to the end),
+    so the client never sends it.
+    '''
+    track_uri: str
+    track_name: str
+    artist_name: str
+
+
+class QueueTrackRead(SQLModel):
+    id: int
+    queue_id: int
+    track_uri: str
+    track_name: str
+    artist_name: str
+    position: int
+
+
+class QueueRead(SQLModel):
+    id: int
+    name: str
+    created_at: datetime
+
+
+class QueueReadWithTracks(QueueRead):
+    tracks: list["QueueTrack"] = []    # Full queue detail: the queue plus every track inside it
 

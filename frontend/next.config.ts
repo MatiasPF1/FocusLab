@@ -7,8 +7,21 @@ const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
   // Only send the origin (no path) when navigating cross-origin
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  // Disable browser features that are not used by this app
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  /*
+   * Disable browser features that are not used by this app.
+   *
+   * autoplay and encrypted-media are the exception: the Spotify Web Playback
+   * SDK plays audio inside an iframe it loads from sdk.scdn.co, and both
+   * features default to "self" only. Without naming that origin here the
+   * browser blocks playback, because protected audio cannot be decrypted.
+   */
+  {
+    key: "Permissions-Policy",
+    value:
+      'camera=(), microphone=(), geolocation=(), ' +
+      'autoplay=(self "https://sdk.scdn.co"), ' +
+      'encrypted-media=(self "https://sdk.scdn.co")',
+  },
   // Force HTTPS for one year (only effective over HTTPS in production)
   { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
 ];
