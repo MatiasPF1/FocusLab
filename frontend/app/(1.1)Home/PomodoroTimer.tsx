@@ -23,15 +23,17 @@ function formatTime(totalSeconds: number)
 export default function PomodoroTimer() {
   // Which preset is currently selected
   const [preset, setPreset] = useState<Preset>(DEFAULT_MINUTES);
-  // Minutes typed into the custom field 
+  // Minutes typed into the custom field
   const [customMinutes, setCustomMinutes] = useState(DEFAULT_MINUTES);  // Minutes
-  const [secondsLeft, setSecondsLeft] = useState(DEFAULT_MINUTES * 60); // Seconds 
+  const [secondsLeft, setSecondsLeft] = useState(DEFAULT_MINUTES * 60); // Seconds
   const [isRunning, setIsRunning] = useState(false);                    // Start Is Off
+  // Which session this is, counted up only when one actually runs to zero.
+  const [sessionCount, setSessionCount] = useState(1);
 
 
 
   // Tick the countdown down once a second while running.
-  useEffect(() => 
+  useEffect(() =>
     {
     if (!isRunning)
       {
@@ -40,6 +42,12 @@ export default function PomodoroTimer() {
     if (secondsLeft <= 0)
       {
       setIsRunning(false);       // Stop ticking once the session hits zero.
+      /*
+       * Only a countdown that actually reached zero while running counts as a
+       * finished session. skipForward sets isRunning to false in the same
+       * update, so it never enters this branch and never counts one.
+       */
+      setSessionCount((current) => current + 1);
       return;
       }
 
@@ -93,69 +101,82 @@ export default function PomodoroTimer() {
   // #####################################################################################################################################################################################################
 
   return (
-    <div className="mt-6 bg-ob-surface border border-ob-line/60 rounded-2xl p-12 flex flex-col items-center w-full">
-      {/* The clock carries the whole card, so it is sized to dominate it */}
-      <span className="text-8xl font-extrabold tabular-nums tracking-tight text-ob-mist leading-none">
-        {formatTime(secondsLeft)}
-      </span>
-      <span className="text-[11px] font-semibold text-ob-slate tracking-[0.28em] mt-4">
-        {secondsLeft > 0 ? "TIME TO FOCUS" : "SESSION COMPLETE"}
-      </span>
+    <div className="mt-6 flex flex-col items-center w-full">
+      <div className="bg-ob-surface border border-ob-line/60 rounded-2xl px-10 py-9 flex flex-col items-center w-full">
+        {/* Session length, as a segmented control rather than a row of loose pills */}
+        <div className="flex items-center gap-1 bg-ob-base border border-ob-line/60 rounded-full p-1">
+          {PRESETS.map((option) => (
+            <button
+              key={option}
+              onClick={() => selectPreset(option)}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold capitalize transition-colors ${
+                preset === option
+                  ? "bg-ob-mist text-ob-void"
+                  : "text-ob-slate hover:text-ob-mist"
+              }`}
+            >
+              {option === "custom" ? "Custom" : `${option}m`}
+            </button>
+          ))}
+        </div>
 
-      {/*
-        Skip controls stay quiet so the single light button reads as the one
-        thing to press, the same way the mockup weights them.
-      */}
-      <div className="flex items-center gap-7 mt-9">
-        <button
-          onClick={skipBack}
-          aria-label="Restart this session"
-          className="text-ob-slate hover:text-ob-mist transition-colors"
-        >
-          <SkipBack size={18} />
-        </button>
-        <button
-          onClick={togglePlayPause}
-          aria-label={isRunning ? "Pause" : "Start"}
-          className="w-16 h-16 rounded-2xl bg-ob-mist flex items-center justify-center text-ob-void shadow-lg shadow-black/30 hover:bg-white transition-colors"
-        >
-          {isRunning ? <Pause size={22} fill="currentColor" /> : <Play size={22} fill="currentColor" />}
-        </button>
-        <button
-          onClick={skipForward}
-          aria-label="End this session"
-          className="text-ob-slate hover:text-ob-mist transition-colors"
-        >
-          <SkipForward size={18} />
-        </button>
-      </div>
+        {preset === "custom" && (
+          <input
+            type="number"
+            min={1}
+            value={customMinutes}
+            onChange={(e) => handleCustomMinutesChange(e.target.valueAsNumber)}
+            className="mt-3 w-24 bg-ob-base border border-ob-line rounded-lg px-3 py-1.5 text-sm text-center text-ob-mist focus:outline-none focus:border-ob-slate"
+          />
+        )}
 
-      {/* Session length picker: 5 / 15 / 25 minutes, or a custom value */}
-      <div className="flex items-center gap-2 mt-10">
-        {PRESETS.map((option) => (
+        {/* The clock carries the whole card, so it is sized to dominate it */}
+        <span className="text-8xl font-extrabold tabular-nums tracking-tight text-ob-mist leading-none mt-8">
+          {formatTime(secondsLeft)}
+        </span>
+
+        {/* One full-width bar reads as the single thing to press, flanked by quiet skip controls */}
+        <div className="flex items-center gap-3 mt-9 w-full">
           <button
-            key={option}
-            onClick={() => selectPreset(option)}
-            className={`px-4 py-1.5 rounded-full text-xs font-semibold capitalize transition-colors border ${
-              preset === option
-                ? "bg-ob-mist text-ob-void border-ob-mist"
-                : "border-ob-line text-ob-slate hover:text-ob-mist hover:border-ob-slate"
-            }`}
+            onClick={skipBack}
+            aria-label="Restart this session"
+            className="w-11 h-11 shrink-0 rounded-xl border border-ob-line text-ob-slate hover:text-ob-mist hover:border-ob-slate transition-colors flex items-center justify-center"
           >
-            {option === "custom" ? "Custom" : `${option}m`}
+            <SkipBack size={16} />
           </button>
-        ))}
+          <button
+            onClick={togglePlayPause}
+            className="flex-1 h-11 rounded-xl bg-ob-mist text-ob-void font-bold text-sm tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-black/30 hover:bg-white transition-colors"
+          >
+            {isRunning ? (
+              <>
+                <Pause size={15} fill="currentColor" /> PAUSE
+              </>
+            ) : (
+              <>
+                <Play size={15} fill="currentColor" /> START
+              </>
+            )}
+          </button>
+          <button
+            onClick={skipForward}
+            aria-label="End this session"
+            className="w-11 h-11 shrink-0 rounded-xl border border-ob-line text-ob-slate hover:text-ob-mist hover:border-ob-slate transition-colors flex items-center justify-center"
+          >
+            <SkipForward size={16} />
+          </button>
+        </div>
       </div>
 
-      {preset === "custom" && (
-        <input
-          type="number"
-          min={1}
-          value={customMinutes}
-          onChange={(e) => handleCustomMinutesChange(e.target.valueAsNumber)}
-          className="mt-3 w-24 bg-ob-base border border-ob-line rounded-lg px-3 py-1.5 text-sm text-center text-ob-mist focus:outline-none focus:border-ob-slate"
-        />
-      )}
+      {/* Session number and status sit outside the card, not competing with the clock for weight */}
+      <div className="mt-4 text-center">
+        <p className="text-xs font-semibold text-ob-slate tabular-nums">
+          #{sessionCount}
+        </p>
+        <p className="text-sm font-semibold text-ob-mist mt-0.5">
+          {secondsLeft > 0 ? "Time to focus!" : "Session complete!"}
+        </p>
+      </div>
     </div>
   );
 }

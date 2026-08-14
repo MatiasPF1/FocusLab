@@ -1,12 +1,11 @@
-import Sidebar from "./Sidebar";
 import PomodoroTimer from "./PomodoroTimer";
 import PlaylistSection from "./PlaylistSection";
 
+// The Sidebar and the surrounding flex shell now live in AppShell, so every
+// dashboard page (this one included) contributes only its own content.
 export default function HomePage() {
   return (
-    <main className="h-screen w-screen bg-ob-base text-ob-mist flex">
-      <Sidebar />
-
+    <>
       <section className="flex-1 flex flex-col items-center p-6 overflow-y-auto">
         <div className="w-full max-w-xl flex flex-col items-center text-center mt-10">
           <h2 className="text-6xl font-bold mt-2 text-ob-mist">Pomodoro Timer</h2>
@@ -22,6 +21,6 @@ export default function HomePage() {
       <aside className="w-96 shrink-0 border-l border-ob-line/60 p-6 overflow-y-auto">
         <PlaylistSection />
       </aside>
-    </main>
+    </>
   );
 }

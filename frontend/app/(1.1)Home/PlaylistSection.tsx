@@ -15,9 +15,14 @@ import {
   SkipForward,
 } from "lucide-react";
 
-import { useSpotifyWebPlayer } from "./useSpotifyWebPlayer";
+import { useSpotifyPlayerContext } from "../SpotifyPlayerProvider";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+// Uses no component state, so it lives here rather than being rebuilt every render.
+function handleConnectSpotify() {
+  window.location.href = `${API_URL}/spotify/login`;
+}
 
 // A queue as returned by the backend's /queues endpoints.
 type Queue = {
@@ -62,7 +67,6 @@ type RecentlyPlayedTrack = {
 };
 
 export default function PlaylistSection() {
-  const [connected, setConnected] = useState<boolean | null>(null);
   const [queues, setQueues] = useState<Queue[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -87,32 +91,23 @@ export default function PlaylistSection() {
   const [recentlyPlayed, setRecentlyPlayed] = useState<RecentlyPlayedTrack[]>([]);
 
   /*
-   * Registers this tab as a Spotify device, so music plays out of FocusLab and
-   * the Spotify app never has to be open. Only worth starting once we know the
-   * account is actually linked.
+   * The connection status and the Spotify Web Playback SDK player both live in
+   * AppShell now, not here, so leaving this page no longer disconnects
+   * FocusLab as a device or interrupts whatever is playing.
    */
-  const {
-    deviceId: webPlayerId,
-    playerError,
-    waitForDevice,
-    activatePlayer,
-  } = useSpotifyWebPlayer(connected === true);
+  const { connected, deviceId: webPlayerId, playerError, waitForDevice, activatePlayer } =
+    useSpotifyPlayerContext();
 
-  // On mount: check the Spotify connection and load existing queues.
+  // On mount: load existing queues.
   useEffect(() => {
     let cancelled = false;
 
-    fetch(`${API_URL}/spotify/status`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (!cancelled) setConnected(Boolean(data.connected));
-      })
-      .catch(() => {
-        if (!cancelled) setConnected(false);
-      });
-
     fetch(`${API_URL}/queues`)
-      .then((res) => res.json())
+      .then((res) => {
+        // fetch only rejects on a network failure, not on a 4xx/5xx body
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
       .then((data) => {
         if (!cancelled) setQueues(data);
       })
@@ -181,10 +176,6 @@ export default function PlaylistSection() {
       cancelled = true;
     };
   }, [connected]);
-
-  function handleConnectSpotify() {
-    window.location.href = `${API_URL}/spotify/login`;
-  }
 
   /*
    * Aims a command at this tab's own player once it is ready, so the music comes
@@ -393,12 +384,18 @@ export default function PlaylistSection() {
       );
       if (!res.ok) throw new Error();
 
-      // The backend closes the gap in positions, so renumber locally to match.
-      setTracks((current) =>
-        current
-          .filter((track) => track.id !== trackId)
-          .map((track, index) => ({ ...track, position: index + 1 })),
-      );
+      /*
+       * The backend closes the gap in positions, so renumber locally to match.
+       * One pass: skip the removed track, renumber every one that survives.
+       */
+      setTracks((current) => {
+        const next: QueueTrack[] = [];
+        for (const track of current) {
+          if (track.id === trackId) continue;
+          next.push({ ...track, position: next.length + 1 });
+        }
+        return next;
+      });
     } catch {
       setError("Could not remove that song.");
     }
@@ -407,7 +404,15 @@ export default function PlaylistSection() {
   return (
     <div className="bg-ob-surface border border-ob-line/60 rounded-2xl p-6 flex flex-col w-full text-left">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-ob-mist">Queues</h3>
+        <div>
+          {/* Same small tracked-caps label used for "TIME TO FOCUS" and "RECENTLY PLAYED" */}
+          <p className="text-[10px] font-semibold text-ob-slate tracking-[0.2em]">
+            SPOTIFY
+          </p>
+          <h3 className="text-lg font-semibold text-ob-mist leading-tight">
+            Queue
+          </h3>
+        </div>
         {connected ? (
           <ListMusic size={16} className="text-ob-slate" aria-hidden="true" />
         ) : (
@@ -520,7 +525,7 @@ export default function PlaylistSection() {
                 <button
                   onClick={() => deleteQueue(queue.id)}
                   aria-label={`Delete ${queue.name}`}
-                  className="text-ob-slate opacity-0 group-hover:opacity-100 hover:text-red-400 transition-all shrink-0"
+                  className="text-ob-slate opacity-0 group-hover:opacity-100 hover:text-red-400 transition-[color,opacity] shrink-0"
                 >
                   <Trash2 size={14} />
                 </button>
@@ -576,7 +581,7 @@ export default function PlaylistSection() {
                             onClick={() => removeTrack(track.id)}
                             aria-label={`Remove ${track.track_name} from this queue permanently`}
                             title="Remove from queue permanently"
-                            className="text-ob-slate opacity-0 group-hover/track:opacity-100 hover:text-red-400 transition-all shrink-0 ml-2"
+                            className="text-ob-slate opacity-0 group-hover/track:opacity-100 hover:text-red-400 transition-[color,opacity] shrink-0 ml-2"
                           >
                             <X size={14} />
                           </button>
@@ -596,6 +601,7 @@ export default function PlaylistSection() {
                       onKeyDown={(event) => {
                         if (event.key === "Enter") searchSpotify();
                       }}
+                      aria-label="Search Spotify for a song"
                       placeholder="Search Spotify for a song"
                       className="flex-1 bg-ob-base border border-ob-line rounded-lg px-3 py-1.5 text-sm text-ob-mist placeholder:text-ob-slate focus:outline-none focus:border-ob-slate"
                     />

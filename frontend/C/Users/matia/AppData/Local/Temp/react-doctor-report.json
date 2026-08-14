@@ -1,0 +1,717 @@
+{
+  "schemaVersion": 3,
+  "mode": "full",
+  "reactDetected": true,
+  "version": "0.9.12",
+  "ok": true,
+  "directory": "/app",
+  "diff": null,
+  "projects": [
+    {
+      "directory": "/app",
+      "packageRoot": "/app",
+      "framework": "nextjs",
+      "project": {
+        "rootDirectory": "/app",
+        "projectName": "studyhub",
+        "reactVersion": "19.2.3",
+        "reactMajorVersion": 19,
+        "tailwindVersion": "^4",
+        "zodVersion": null,
+        "zodMajorVersion": null,
+        "mobxVersion": null,
+        "mobxMajorVersion": null,
+        "hasMobxReact": false,
+        "mobxReactVersion": null,
+        "hasMobxReactLite": false,
+        "mobxReactLiteVersion": null,
+        "hasMobxStateTree": false,
+        "hasMobxReactObserver": false,
+        "zustandVersion": null,
+        "zustandMajorVersion": null,
+        "framework": "nextjs",
+        "hasTypeScript": true,
+        "hasReactCompiler": false,
+        "hasReactCompilerLintPlugin": false,
+        "hasTanStackQuery": false,
+        "hasI18nLibrary": false,
+        "tanstackQueryVersion": null,
+        "styledComponentsVersion": null,
+        "valtioVersion": null,
+        "valtioMajorVersion": null,
+        "hasRemotion": false,
+        "remotionVersion": null,
+        "remotionMajorVersion": null,
+        "hasThree": false,
+        "threeVersion": null,
+        "threeRelease": null,
+        "hasReactThreeFiber": false,
+        "reactThreeFiberVersion": null,
+        "reactThreeFiberMajorVersion": null,
+        "hasSsrDependency": false,
+        "preactVersion": null,
+        "preactMajorVersion": null,
+        "hasReactNativeWorkspace": false,
+        "nextjsVersion": "16.1.6",
+        "nextjsMajorVersion": 16,
+        "reactRouterVersion": null,
+        "hasReactRouterFramework": false,
+        "expoVersion": null,
+        "shopifyFlashListVersion": null,
+        "shopifyFlashListMajorVersion": null,
+        "hasReanimated": false,
+        "reanimatedVersion": null,
+        "isPreES2023Target": true,
+        "isStaticExport": false,
+        "sourceFileCount": 20
+      },
+      "diagnostics": [
+        {
+          "filePath": "app/(1.1)Home/PlaylistSection.tsx",
+          "plugin": "react-doctor",
+          "rule": "no-giant-component",
+          "severity": "warning",
+          "title": "Large component is hard to read and change",
+          "message": "Component \"PlaylistSection\" is over 300 lines long, which is hard to read & change. Split it into a few smaller components.",
+          "help": "Pull each section into its own component so the parent is easier to read, test, and change.",
+          "line": 64,
+          "column": 25,
+          "offset": 1332,
+          "length": 15,
+          "endLine": 64,
+          "category": "Maintainability",
+          "id": "app/(1.1)Home/PlaylistSection.tsx::64:25::react-doctor/no-giant-component::aabbc222f4e0d90a0bce838f6db6668c5312d661ebda969d1b1005786fffc996",
+          "normalizedFilePath": "app/(1.1)Home/PlaylistSection.tsx",
+          "tags": [
+            "react-jsx-only",
+            "test-noise"
+          ]
+        },
+        {
+          "filePath": "app/(1.1)Home/PlaylistSection.tsx",
+          "plugin": "react-doctor",
+          "rule": "prefer-useReducer",
+          "severity": "warning",
+          "title": "Many related useState calls",
+          "message": "\"PlaylistSection\" updates 5 separate useState values in one place — state that changes together is easier to keep consistent as a single useReducer action.",
+          "help": "Group state that always changes together into `useReducer` so one dispatched action describes the whole transition instead of a list of setter calls.",
+          "line": 64,
+          "column": 43,
+          "offset": 1350,
+          "length": 25190,
+          "endLine": 713,
+          "category": "Bugs",
+          "id": "app/(1.1)Home/PlaylistSection.tsx::64:43::react-doctor/prefer-useReducer::0ffe4b0f7d1b35d4d97ba25a0ebc359495c49c399c886754ef8789de7e62da29",
+          "normalizedFilePath": "app/(1.1)Home/PlaylistSection.tsx",
+          "tags": [
+            "test-noise"
+          ]
+        },
+        {
+          "filePath": "app/(1.1)Home/PlaylistSection.tsx",
+          "plugin": "react-doctor",
+          "rule": "no-fetch-response-used-without-status-check",
+          "severity": "warning",
+          "title": "fetch Response consumed without status check",
+          "message": "`fetch()` resolves (does not reject) on HTTP 4xx/5xx, so this unchecked body read may treat an HTTP error payload like a successful response. Check `response.ok`/`response.status`, or deliberately handle the API's error payload, before reading the body.",
+          "help": "Check `response.ok` (or `response.status`) before consuming a `fetch` Response with `.json()`/`.text()`/`.blob()`. `fetch` resolves on HTTP 4xx/5xx, so an unchecked response parses the error body as success or crashes on an always-truthy guard.",
+          "line": 100,
+          "column": 5,
+          "offset": 2790,
+          "length": 26,
+          "endLine": 100,
+          "category": "Bugs",
+          "id": "app/(1.1)Home/PlaylistSection.tsx::100:5::react-doctor/no-fetch-response-used-without-status-check::16e1208188bbd3fba56ebfbda112b48489f7e63a91839b9b8e3137335a8226d4",
+          "normalizedFilePath": "app/(1.1)Home/PlaylistSection.tsx",
+          "tags": [
+            "test-noise"
+          ]
+        },
+        {
+          "filePath": "app/(1.1)Home/PlaylistSection.tsx",
+          "plugin": "react-doctor",
+          "rule": "prefer-module-scope-pure-function",
+          "severity": "warning",
+          "title": "Pure function rebuilt every render",
+          "message": "`handleConnectSpotify` inside `PlaylistSection` uses no local state but is rebuilt on every render, so it wastes work & breaks memoized children. Move it to the top of the file, outside the component.",
+          "help": "Move the function above the component, at the top of the file. It doesn't use local state, so rebuilding it each update is wasted work.",
+          "line": 171,
+          "column": 3,
+          "offset": 4804,
+          "length": 94,
+          "endLine": 173,
+          "category": "Maintainability",
+          "id": "app/(1.1)Home/PlaylistSection.tsx::171:3::react-doctor/prefer-module-scope-pure-function::fecfb99dcbe51e0fc12ec5360d57e486a45f900278b56a292c6803e672d229ce",
+          "normalizedFilePath": "app/(1.1)Home/PlaylistSection.tsx",
+          "tags": [
+            "test-noise"
+          ]
+        },
+        {
+          "filePath": "app/(1.1)Home/PlaylistSection.tsx",
+          "plugin": "react-doctor",
+          "rule": "js-combine-iterations",
+          "severity": "warning",
+          "title": "Chained array iterations",
+          "message": "This loops over your list twice because .filter().map() makes two passes, so do it in one pass with .reduce() or a for...of loop",
+          "help": "Combine `.map().filter()` style chains into one pass with `.reduce()` or a `for...of` loop, so you only loop over the list once",
+          "line": 384,
+          "column": 9,
+          "offset": 11749,
+          "length": 130,
+          "endLine": 386,
+          "category": "Performance",
+          "id": "app/(1.1)Home/PlaylistSection.tsx::384:9::react-doctor/js-combine-iterations::86f8632615fdfb3adc9efe484c1e1ab781c7771048e0b9f5c2d8b6920d63cb33",
+          "normalizedFilePath": "app/(1.1)Home/PlaylistSection.tsx",
+          "tags": [
+            "test-noise"
+          ]
+        },
+        {
+          "filePath": "app/(1.1)Home/PlaylistSection.tsx",
+          "plugin": "react-doctor",
+          "rule": "nextjs-no-img-element",
+          "severity": "warning",
+          "title": "Plain img ships unoptimized images",
+          "message": "Plain <img> ships unoptimized, oversized images.",
+          "help": "Use `next/image` so users get optimized formats, responsive srcsets, and lazy loading instead of oversized image downloads.",
+          "line": 438,
+          "column": 13,
+          "offset": 13903,
+          "length": 150,
+          "endLine": 442,
+          "category": "Bugs",
+          "id": "app/(1.1)Home/PlaylistSection.tsx::438:13::react-doctor/nextjs-no-img-element::7def18e0c6d33369057372e2aae298c5345fcaebe7978f9c1122cda57e25e8da",
+          "normalizedFilePath": "app/(1.1)Home/PlaylistSection.tsx",
+          "tags": [
+            "test-noise"
+          ]
+        },
+        {
+          "filePath": "app/(1.1)Home/PlaylistSection.tsx",
+          "plugin": "react-doctor",
+          "rule": "no-transition-all",
+          "severity": "warning",
+          "title": "transition: all animates everything",
+          "message": "Your users see janky animation because `transition-all` animates every property that changes, including expensive layout ones and instant ones like focus rings. Name the properties: `transition-colors`, `transition-opacity`, or `transition-transform`.",
+          "help": "List the specific properties: `transition: \"opacity 200ms, transform 200ms\"`. In Tailwind, use `transition-colors`, `transition-opacity`, or `transition-transform`",
+          "line": 514,
+          "column": 17,
+          "offset": 17469,
+          "length": 260,
+          "endLine": 518,
+          "category": "Performance",
+          "id": "app/(1.1)Home/PlaylistSection.tsx::514:17::react-doctor/no-transition-all::c5a3bb303c65b82c66da02b22dd9183e867d568ecd94d26ce567553542aebabd",
+          "normalizedFilePath": "app/(1.1)Home/PlaylistSection.tsx",
+          "tags": [
+            "test-noise"
+          ]
+        },
+        {
+          "filePath": "app/(1.1)Home/PlaylistSection.tsx",
+          "plugin": "react-doctor",
+          "rule": "no-transition-all",
+          "severity": "warning",
+          "title": "transition: all animates everything",
+          "message": "Your users see janky animation because `transition-all` animates every property that changes, including expensive layout ones and instant ones like focus rings. Name the properties: `transition-colors`, `transition-opacity`, or `transition-transform`.",
+          "help": "List the specific properties: `transition: \"opacity 200ms, transform 200ms\"`. In Tailwind, use `transition-colors`, `transition-opacity`, or `transition-transform`",
+          "line": 569,
+          "column": 27,
+          "offset": 20268,
+          "length": 412,
+          "endLine": 574,
+          "category": "Performance",
+          "id": "app/(1.1)Home/PlaylistSection.tsx::569:27::react-doctor/no-transition-all::c5a3bb303c65b82c66da02b22dd9183e867d568ecd94d26ce567553542aebabd",
+          "normalizedFilePath": "app/(1.1)Home/PlaylistSection.tsx",
+          "tags": [
+            "test-noise"
+          ]
+        },
+        {
+          "filePath": "app/(1.1)Home/PlaylistSection.tsx",
+          "plugin": "react-doctor",
+          "rule": "no-placeholder-only-field",
+          "severity": "warning",
+          "title": "Field relies on placeholder text for its label",
+          "message": "Placeholder text disappears during entry and cannot replace a persistent field label. Add a visible associated label.",
+          "help": "Add a visible label associated with the field. Keep placeholder text for examples or formatting hints.",
+          "line": 587,
+          "column": 21,
+          "offset": 21115,
+          "length": 532,
+          "endLine": 595,
+          "category": "Accessibility",
+          "matchByOccurrence": true,
+          "id": "app/(1.1)Home/PlaylistSection.tsx::587:21::react-doctor/no-placeholder-only-field::f9d33a057ed1f10a70640d729a92d5ed29950fede054aa4a06bc5f3ab5cefa85",
+          "normalizedFilePath": "app/(1.1)Home/PlaylistSection.tsx",
+          "tags": [
+            "test-noise"
+          ]
+        },
+        {
+          "filePath": "app/(1.1)Home/PlaylistSection.tsx",
+          "plugin": "react-doctor",
+          "rule": "no-placeholder-only-field",
+          "severity": "warning",
+          "title": "Field relies on placeholder text for its label",
+          "message": "Placeholder text disappears during entry and cannot replace a persistent field label. Add a visible associated label.",
+          "help": "Add a visible label associated with the field. Keep placeholder text for examples or formatting hints.",
+          "line": 643,
+          "column": 13,
+          "offset": 23768,
+          "length": 543,
+          "endLine": 653,
+          "category": "Accessibility",
+          "matchByOccurrence": true,
+          "id": "app/(1.1)Home/PlaylistSection.tsx::643:13::react-doctor/no-placeholder-only-field::f9d33a057ed1f10a70640d729a92d5ed29950fede054aa4a06bc5f3ab5cefa85",
+          "normalizedFilePath": "app/(1.1)Home/PlaylistSection.tsx",
+          "tags": [
+            "test-noise"
+          ]
+        },
+        {
+          "filePath": "app/(1.1)Home/PomodoroTimer.tsx",
+          "plugin": "react-doctor",
+          "rule": "control-has-associated-label",
+          "severity": "warning",
+          "title": "Control missing accessible label",
+          "message": "Blind users can't tell what this control does because its name is missing or only a symbol, so add visible text, `aria-label`, or `aria-labelledby`.",
+          "help": "Give every interactive control a label screen readers can read.",
+          "line": 124,
+          "column": 11,
+          "offset": 4948,
+          "length": 349,
+          "endLine": 130,
+          "category": "Accessibility",
+          "matchByOccurrence": true,
+          "id": "app/(1.1)Home/PomodoroTimer.tsx::124:11::react-doctor/control-has-associated-label::e13d34a1733ed844e8370c59cb863cf0a433466c2c5d0823ef31826c5b76246f",
+          "normalizedFilePath": "app/(1.1)Home/PomodoroTimer.tsx",
+          "tags": [
+            "react-jsx-only"
+          ]
+        },
+        {
+          "filePath": "app/SpotifyPlayerProvider.tsx",
+          "plugin": "react-doctor",
+          "rule": "no-fetch-response-used-without-status-check",
+          "severity": "warning",
+          "title": "fetch Response consumed without status check",
+          "message": "`fetch()` resolves (does not reject) on HTTP 4xx/5xx, so this unchecked body read may treat an HTTP error payload like a successful response. Check `response.ok`/`response.status`, or deliberately handle the API's error payload, before reading the body.",
+          "help": "Check `response.ok` (or `response.status`) before consuming a `fetch` Response with `.json()`/`.text()`/`.blob()`. `fetch` resolves on HTTP 4xx/5xx, so an unchecked response parses the error body as success or crashes on an always-truthy guard.",
+          "line": 41,
+          "column": 5,
+          "offset": 1356,
+          "length": 34,
+          "endLine": 41,
+          "category": "Bugs",
+          "id": "app/SpotifyPlayerProvider.tsx::41:5::react-doctor/no-fetch-response-used-without-status-check::16e1208188bbd3fba56ebfbda112b48489f7e63a91839b9b8e3137335a8226d4",
+          "normalizedFilePath": "app/SpotifyPlayerProvider.tsx",
+          "tags": [
+            "test-noise"
+          ]
+        },
+        {
+          "filePath": "app/SpotifyPlayerProvider.tsx",
+          "plugin": "react-doctor",
+          "rule": "jsx-no-constructed-context-values",
+          "severity": "warning",
+          "title": "Unstable context provider value",
+          "message": "Every reader of this context redraws on each render because you build its `value` inline.",
+          "help": "Wrap the context value in `useMemo` or move it outside the component so consumers do not redraw every render.",
+          "line": 60,
+          "column": 7,
+          "offset": 1823,
+          "length": 75,
+          "endLine": 60,
+          "category": "Performance",
+          "id": "app/SpotifyPlayerProvider.tsx::60:7::react-doctor/jsx-no-constructed-context-values::47134b161e725a1fca0ce2497b72f763e5cf13c6193275a422e5a7cc197d2084",
+          "normalizedFilePath": "app/SpotifyPlayerProvider.tsx",
+          "tags": [
+            "react-jsx-only"
+          ]
+        },
+        {
+          "filePath": "package.json",
+          "plugin": "react-doctor",
+          "rule": "no-vulnerable-react-server-components",
+          "severity": "warning",
+          "message": "next@16.1.6 bundles a React Server Components runtime affected by a high-severity denial-of-service vulnerability (CVE-2026-23870) patched in Next.js 16.2.6",
+          "help": "Upgrade Next.js to 16.2.6 (or newer). Next.js bundles its own React Server Components runtime, so bumping Next.js ships the fix. Run `npm install next@16.2.6`. See https://vercel.com/changelog/next-js-may-2026-security-release",
+          "line": 0,
+          "column": 0,
+          "category": "Security",
+          "id": "package.json::0:0::react-doctor/no-vulnerable-react-server-components::428dda55ff6d3468f4ba5f23825422bedb986ece60c6484e9f09daf9e497d50e",
+          "normalizedFilePath": "package.json",
+          "tags": []
+        }
+      ],
+      "score": {
+        "score": 67,
+        "label": "Needs work",
+        "rules": {
+          "react-doctor/no-giant-component": {
+            "priority": 30,
+            "tier": "P3"
+          },
+          "react-doctor/prefer-useReducer": {
+            "priority": 22,
+            "tier": "P3"
+          },
+          "react-doctor/no-fetch-response-used-without-status-check": {
+            "priority": null,
+            "tier": "P3"
+          },
+          "react-doctor/prefer-module-scope-pure-function": {
+            "priority": 31,
+            "tier": "P3"
+          },
+          "react-doctor/js-combine-iterations": {
+            "priority": 26,
+            "tier": "P3"
+          },
+          "react-doctor/nextjs-no-img-element": {
+            "priority": 52,
+            "tier": "P2"
+          },
+          "react-doctor/no-transition-all": {
+            "priority": 38,
+            "tier": "P3"
+          },
+          "react-doctor/no-placeholder-only-field": {
+            "priority": null,
+            "tier": "P3"
+          },
+          "react-doctor/control-has-associated-label": {
+            "priority": 54,
+            "tier": "P2"
+          },
+          "react-doctor/jsx-no-constructed-context-values": {
+            "priority": 56,
+            "tier": "P2"
+          },
+          "react-doctor/no-vulnerable-react-server-components": {
+            "priority": null,
+            "tier": "P3"
+          }
+        }
+      },
+      "skippedChecks": [],
+      "analyzedFiles": [
+        "app/(0)Intro_Components/LoginPage.tsx",
+        "app/(1.1)Home/PlaylistSection.tsx",
+        "app/(1.1)Home/PomodoroTimer.tsx",
+        "app/(1.1)Home/Sidebar.tsx",
+        "app/(1.1)Home/page.tsx",
+        "app/(1.1)Home/useSpotifyWebPlayer.ts",
+        "app/(1.2)Notebook/page.tsx",
+        "app/(1.3)To-Do/page.tsx",
+        "app/(1.4)AI_Study/page.tsx",
+        "app/(1.5)Calendar/page.tsx",
+        "app/AppShell.tsx",
+        "app/SpotifyPlayerProvider.tsx",
+        "app/UI_21stDev_components/flow-field-background.tsx",
+        "app/layout.tsx",
+        "app/page.tsx",
+        "eslint.config.mjs",
+        "lib/utils.ts",
+        "next-env.d.ts",
+        "next.config.ts",
+        "postcss.config.mjs"
+      ],
+      "analyzedFileCount": 20,
+      "complete": true,
+      "scannedFileCount": 20,
+      "elapsedMilliseconds": 9436.776979
+    }
+  ],
+  "diagnostics": [
+    {
+      "filePath": "app/(1.1)Home/PlaylistSection.tsx",
+      "plugin": "react-doctor",
+      "rule": "no-giant-component",
+      "severity": "warning",
+      "title": "Large component is hard to read and change",
+      "message": "Component \"PlaylistSection\" is over 300 lines long, which is hard to read & change. Split it into a few smaller components.",
+      "help": "Pull each section into its own component so the parent is easier to read, test, and change.",
+      "line": 64,
+      "column": 25,
+      "offset": 1332,
+      "length": 15,
+      "endLine": 64,
+      "category": "Maintainability",
+      "id": "app/(1.1)Home/PlaylistSection.tsx::64:25::react-doctor/no-giant-component::aabbc222f4e0d90a0bce838f6db6668c5312d661ebda969d1b1005786fffc996",
+      "normalizedFilePath": "app/(1.1)Home/PlaylistSection.tsx",
+      "tags": [
+        "react-jsx-only",
+        "test-noise"
+      ]
+    },
+    {
+      "filePath": "app/(1.1)Home/PlaylistSection.tsx",
+      "plugin": "react-doctor",
+      "rule": "prefer-useReducer",
+      "severity": "warning",
+      "title": "Many related useState calls",
+      "message": "\"PlaylistSection\" updates 5 separate useState values in one place — state that changes together is easier to keep consistent as a single useReducer action.",
+      "help": "Group state that always changes together into `useReducer` so one dispatched action describes the whole transition instead of a list of setter calls.",
+      "line": 64,
+      "column": 43,
+      "offset": 1350,
+      "length": 25190,
+      "endLine": 713,
+      "category": "Bugs",
+      "id": "app/(1.1)Home/PlaylistSection.tsx::64:43::react-doctor/prefer-useReducer::0ffe4b0f7d1b35d4d97ba25a0ebc359495c49c399c886754ef8789de7e62da29",
+      "normalizedFilePath": "app/(1.1)Home/PlaylistSection.tsx",
+      "tags": [
+        "test-noise"
+      ]
+    },
+    {
+      "filePath": "app/(1.1)Home/PlaylistSection.tsx",
+      "plugin": "react-doctor",
+      "rule": "no-fetch-response-used-without-status-check",
+      "severity": "warning",
+      "title": "fetch Response consumed without status check",
+      "message": "`fetch()` resolves (does not reject) on HTTP 4xx/5xx, so this unchecked body read may treat an HTTP error payload like a successful response. Check `response.ok`/`response.status`, or deliberately handle the API's error payload, before reading the body.",
+      "help": "Check `response.ok` (or `response.status`) before consuming a `fetch` Response with `.json()`/`.text()`/`.blob()`. `fetch` resolves on HTTP 4xx/5xx, so an unchecked response parses the error body as success or crashes on an always-truthy guard.",
+      "line": 100,
+      "column": 5,
+      "offset": 2790,
+      "length": 26,
+      "endLine": 100,
+      "category": "Bugs",
+      "id": "app/(1.1)Home/PlaylistSection.tsx::100:5::react-doctor/no-fetch-response-used-without-status-check::16e1208188bbd3fba56ebfbda112b48489f7e63a91839b9b8e3137335a8226d4",
+      "normalizedFilePath": "app/(1.1)Home/PlaylistSection.tsx",
+      "tags": [
+        "test-noise"
+      ]
+    },
+    {
+      "filePath": "app/(1.1)Home/PlaylistSection.tsx",
+      "plugin": "react-doctor",
+      "rule": "prefer-module-scope-pure-function",
+      "severity": "warning",
+      "title": "Pure function rebuilt every render",
+      "message": "`handleConnectSpotify` inside `PlaylistSection` uses no local state but is rebuilt on every render, so it wastes work & breaks memoized children. Move it to the top of the file, outside the component.",
+      "help": "Move the function above the component, at the top of the file. It doesn't use local state, so rebuilding it each update is wasted work.",
+      "line": 171,
+      "column": 3,
+      "offset": 4804,
+      "length": 94,
+      "endLine": 173,
+      "category": "Maintainability",
+      "id": "app/(1.1)Home/PlaylistSection.tsx::171:3::react-doctor/prefer-module-scope-pure-function::fecfb99dcbe51e0fc12ec5360d57e486a45f900278b56a292c6803e672d229ce",
+      "normalizedFilePath": "app/(1.1)Home/PlaylistSection.tsx",
+      "tags": [
+        "test-noise"
+      ]
+    },
+    {
+      "filePath": "app/(1.1)Home/PlaylistSection.tsx",
+      "plugin": "react-doctor",
+      "rule": "js-combine-iterations",
+      "severity": "warning",
+      "title": "Chained array iterations",
+      "message": "This loops over your list twice because .filter().map() makes two passes, so do it in one pass with .reduce() or a for...of loop",
+      "help": "Combine `.map().filter()` style chains into one pass with `.reduce()` or a `for...of` loop, so you only loop over the list once",
+      "line": 384,
+      "column": 9,
+      "offset": 11749,
+      "length": 130,
+      "endLine": 386,
+      "category": "Performance",
+      "id": "app/(1.1)Home/PlaylistSection.tsx::384:9::react-doctor/js-combine-iterations::86f8632615fdfb3adc9efe484c1e1ab781c7771048e0b9f5c2d8b6920d63cb33",
+      "normalizedFilePath": "app/(1.1)Home/PlaylistSection.tsx",
+      "tags": [
+        "test-noise"
+      ]
+    },
+    {
+      "filePath": "app/(1.1)Home/PlaylistSection.tsx",
+      "plugin": "react-doctor",
+      "rule": "nextjs-no-img-element",
+      "severity": "warning",
+      "title": "Plain img ships unoptimized images",
+      "message": "Plain <img> ships unoptimized, oversized images.",
+      "help": "Use `next/image` so users get optimized formats, responsive srcsets, and lazy loading instead of oversized image downloads.",
+      "line": 438,
+      "column": 13,
+      "offset": 13903,
+      "length": 150,
+      "endLine": 442,
+      "category": "Bugs",
+      "id": "app/(1.1)Home/PlaylistSection.tsx::438:13::react-doctor/nextjs-no-img-element::7def18e0c6d33369057372e2aae298c5345fcaebe7978f9c1122cda57e25e8da",
+      "normalizedFilePath": "app/(1.1)Home/PlaylistSection.tsx",
+      "tags": [
+        "test-noise"
+      ]
+    },
+    {
+      "filePath": "app/(1.1)Home/PlaylistSection.tsx",
+      "plugin": "react-doctor",
+      "rule": "no-transition-all",
+      "severity": "warning",
+      "title": "transition: all animates everything",
+      "message": "Your users see janky animation because `transition-all` animates every property that changes, including expensive layout ones and instant ones like focus rings. Name the properties: `transition-colors`, `transition-opacity`, or `transition-transform`.",
+      "help": "List the specific properties: `transition: \"opacity 200ms, transform 200ms\"`. In Tailwind, use `transition-colors`, `transition-opacity`, or `transition-transform`",
+      "line": 514,
+      "column": 17,
+      "offset": 17469,
+      "length": 260,
+      "endLine": 518,
+      "category": "Performance",
+      "id": "app/(1.1)Home/PlaylistSection.tsx::514:17::react-doctor/no-transition-all::c5a3bb303c65b82c66da02b22dd9183e867d568ecd94d26ce567553542aebabd",
+      "normalizedFilePath": "app/(1.1)Home/PlaylistSection.tsx",
+      "tags": [
+        "test-noise"
+      ]
+    },
+    {
+      "filePath": "app/(1.1)Home/PlaylistSection.tsx",
+      "plugin": "react-doctor",
+      "rule": "no-transition-all",
+      "severity": "warning",
+      "title": "transition: all animates everything",
+      "message": "Your users see janky animation because `transition-all` animates every property that changes, including expensive layout ones and instant ones like focus rings. Name the properties: `transition-colors`, `transition-opacity`, or `transition-transform`.",
+      "help": "List the specific properties: `transition: \"opacity 200ms, transform 200ms\"`. In Tailwind, use `transition-colors`, `transition-opacity`, or `transition-transform`",
+      "line": 569,
+      "column": 27,
+      "offset": 20268,
+      "length": 412,
+      "endLine": 574,
+      "category": "Performance",
+      "id": "app/(1.1)Home/PlaylistSection.tsx::569:27::react-doctor/no-transition-all::c5a3bb303c65b82c66da02b22dd9183e867d568ecd94d26ce567553542aebabd",
+      "normalizedFilePath": "app/(1.1)Home/PlaylistSection.tsx",
+      "tags": [
+        "test-noise"
+      ]
+    },
+    {
+      "filePath": "app/(1.1)Home/PlaylistSection.tsx",
+      "plugin": "react-doctor",
+      "rule": "no-placeholder-only-field",
+      "severity": "warning",
+      "title": "Field relies on placeholder text for its label",
+      "message": "Placeholder text disappears during entry and cannot replace a persistent field label. Add a visible associated label.",
+      "help": "Add a visible label associated with the field. Keep placeholder text for examples or formatting hints.",
+      "line": 587,
+      "column": 21,
+      "offset": 21115,
+      "length": 532,
+      "endLine": 595,
+      "category": "Accessibility",
+      "matchByOccurrence": true,
+      "id": "app/(1.1)Home/PlaylistSection.tsx::587:21::react-doctor/no-placeholder-only-field::f9d33a057ed1f10a70640d729a92d5ed29950fede054aa4a06bc5f3ab5cefa85",
+      "normalizedFilePath": "app/(1.1)Home/PlaylistSection.tsx",
+      "tags": [
+        "test-noise"
+      ]
+    },
+    {
+      "filePath": "app/(1.1)Home/PlaylistSection.tsx",
+      "plugin": "react-doctor",
+      "rule": "no-placeholder-only-field",
+      "severity": "warning",
+      "title": "Field relies on placeholder text for its label",
+      "message": "Placeholder text disappears during entry and cannot replace a persistent field label. Add a visible associated label.",
+      "help": "Add a visible label associated with the field. Keep placeholder text for examples or formatting hints.",
+      "line": 643,
+      "column": 13,
+      "offset": 23768,
+      "length": 543,
+      "endLine": 653,
+      "category": "Accessibility",
+      "matchByOccurrence": true,
+      "id": "app/(1.1)Home/PlaylistSection.tsx::643:13::react-doctor/no-placeholder-only-field::f9d33a057ed1f10a70640d729a92d5ed29950fede054aa4a06bc5f3ab5cefa85",
+      "normalizedFilePath": "app/(1.1)Home/PlaylistSection.tsx",
+      "tags": [
+        "test-noise"
+      ]
+    },
+    {
+      "filePath": "app/(1.1)Home/PomodoroTimer.tsx",
+      "plugin": "react-doctor",
+      "rule": "control-has-associated-label",
+      "severity": "warning",
+      "title": "Control missing accessible label",
+      "message": "Blind users can't tell what this control does because its name is missing or only a symbol, so add visible text, `aria-label`, or `aria-labelledby`.",
+      "help": "Give every interactive control a label screen readers can read.",
+      "line": 124,
+      "column": 11,
+      "offset": 4948,
+      "length": 349,
+      "endLine": 130,
+      "category": "Accessibility",
+      "matchByOccurrence": true,
+      "id": "app/(1.1)Home/PomodoroTimer.tsx::124:11::react-doctor/control-has-associated-label::e13d34a1733ed844e8370c59cb863cf0a433466c2c5d0823ef31826c5b76246f",
+      "normalizedFilePath": "app/(1.1)Home/PomodoroTimer.tsx",
+      "tags": [
+        "react-jsx-only"
+      ]
+    },
+    {
+      "filePath": "app/SpotifyPlayerProvider.tsx",
+      "plugin": "react-doctor",
+      "rule": "no-fetch-response-used-without-status-check",
+      "severity": "warning",
+      "title": "fetch Response consumed without status check",
+      "message": "`fetch()` resolves (does not reject) on HTTP 4xx/5xx, so this unchecked body read may treat an HTTP error payload like a successful response. Check `response.ok`/`response.status`, or deliberately handle the API's error payload, before reading the body.",
+      "help": "Check `response.ok` (or `response.status`) before consuming a `fetch` Response with `.json()`/`.text()`/`.blob()`. `fetch` resolves on HTTP 4xx/5xx, so an unchecked response parses the error body as success or crashes on an always-truthy guard.",
+      "line": 41,
+      "column": 5,
+      "offset": 1356,
+      "length": 34,
+      "endLine": 41,
+      "category": "Bugs",
+      "id": "app/SpotifyPlayerProvider.tsx::41:5::react-doctor/no-fetch-response-used-without-status-check::16e1208188bbd3fba56ebfbda112b48489f7e63a91839b9b8e3137335a8226d4",
+      "normalizedFilePath": "app/SpotifyPlayerProvider.tsx",
+      "tags": [
+        "test-noise"
+      ]
+    },
+    {
+      "filePath": "app/SpotifyPlayerProvider.tsx",
+      "plugin": "react-doctor",
+      "rule": "jsx-no-constructed-context-values",
+      "severity": "warning",
+      "title": "Unstable context provider value",
+      "message": "Every reader of this context redraws on each render because you build its `value` inline.",
+      "help": "Wrap the context value in `useMemo` or move it outside the component so consumers do not redraw every render.",
+      "line": 60,
+      "column": 7,
+      "offset": 1823,
+      "length": 75,
+      "endLine": 60,
+      "category": "Performance",
+      "id": "app/SpotifyPlayerProvider.tsx::60:7::react-doctor/jsx-no-constructed-context-values::47134b161e725a1fca0ce2497b72f763e5cf13c6193275a422e5a7cc197d2084",
+      "normalizedFilePath": "app/SpotifyPlayerProvider.tsx",
+      "tags": [
+        "react-jsx-only"
+      ]
+    },
+    {
+      "filePath": "package.json",
+      "plugin": "react-doctor",
+      "rule": "no-vulnerable-react-server-components",
+      "severity": "warning",
+      "message": "next@16.1.6 bundles a React Server Components runtime affected by a high-severity denial-of-service vulnerability (CVE-2026-23870) patched in Next.js 16.2.6",
+      "help": "Upgrade Next.js to 16.2.6 (or newer). Next.js bundles its own React Server Components runtime, so bumping Next.js ships the fix. Run `npm install next@16.2.6`. See https://vercel.com/changelog/next-js-may-2026-security-release",
+      "line": 0,
+      "column": 0,
+      "category": "Security",
+      "id": "package.json::0:0::react-doctor/no-vulnerable-react-server-components::428dda55ff6d3468f4ba5f23825422bedb986ece60c6484e9f09daf9e497d50e",
+      "normalizedFilePath": "package.json",
+      "tags": []
+    }
+  ],
+  "summary": {
+    "errorCount": 0,
+    "warningCount": 14,
+    "affectedFileCount": 4,
+    "totalDiagnosticCount": 14,
+    "score": 67,
+    "scoreLabel": "Needs work"
+  },
+  "elapsedMilliseconds": 9515.553661000002,
+  "error": null
+}

@@ -14,11 +14,23 @@ services:
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
       INTERNAL_API_URL: http://backend:8000
+      # Native filesystem change events don't cross the Windows -> Docker bind
+      # mount, so Next.js never sees edits without this: it has to poll the
+      # files instead. Without it, every change needs a manual container
+      # restart, which wipes the dev server's compiled-route cache and makes
+      # the next page you open cold-compile instead of navigating instantly.
+      # Only takes effect under webpack (see --webpack below) - Turbopack, the
+      # Next 16 default, ignores this entirely and has no polling flag of its
+      # own yet, so it stays permanently blind to edits over this mount.
+      WATCHPACK_POLLING: "true"
+      CHOKIDAR_USEPOLLING: "true"
 
     depends_on:
       - backend
 
-    command: npm run dev -- --hostname 0.0.0.0
+    # --webpack: Turbopack (the default) doesn't support the polling env vars
+    # above, so it can never see edits made from Windows through this mount.
+    command: npm run dev -- --hostname 0.0.0.0 --webpack
 
 
   backend:

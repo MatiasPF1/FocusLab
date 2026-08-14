@@ -20,7 +20,6 @@ export default function Sidebar() {
     <aside className="w-56 shrink-0 border-r border-ob-line/60 flex flex-col p-4 bg-ob-void">
       <div className="mb-8">
         <h1 className="text-lg font-semibold text-ob-mist">FocusLab</h1>
-        <p className="text-xs text-ob-slate">The Digital Curator</p>
       </div>
       <nav className="flex flex-col gap-1">
         {NAV_ITEMS.map(({ label, icon: Icon, href }) => {
@@ -41,10 +40,6 @@ export default function Sidebar() {
           );
         })}
       </nav>
-      <div className="mt-auto flex flex-col gap-2 text-xs text-ob-slate">
-        <span>Help</span>
-        <span>Archive</span>
-      </div>
     </aside>
   );
 }
