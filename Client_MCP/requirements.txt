@@ -1,0 +1,6 @@
+# LangGraph agent. Spawns FocusLab_MCP/server.py over stdio, so it needs the
+# server's dependencies too.
+-r ../FocusLab_MCP/requirements.txt
+langgraph
+langchain-mcp-adapters
+langchain-anthropic

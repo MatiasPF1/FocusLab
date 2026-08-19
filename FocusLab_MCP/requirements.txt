@@ -1,0 +1,6 @@
+# MCP server. Also imports the backend's Canvas core, hence httpx/dotenv.
+# Pinned below 2.0: mcp 2.x is a major bump and server.py uses the 1.x
+# mcp.server.fastmcp API. Verified working on 1.25.0.
+mcp>=1.25,<2
+httpx
+python-dotenv

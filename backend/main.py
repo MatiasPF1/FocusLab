@@ -27,13 +27,8 @@ app = FastAPI(
 # CORS
 ##########
 
-'''
-What it stops:
--a page on some other site, open in the same browser, quietly
-calling this API in the background and reading the reply.
-'''
 
-#2-)Which origins may read our answers. Comma separated in .env to add more.
+#2-)Which origins may read our answers
 ALLOWED_ORIGINS = [
     origin.strip()
     for origin in os.getenv(
@@ -43,11 +38,11 @@ ALLOWED_ORIGINS = [
     if origin.strip()
 ]
 
-#2.1-)Exactly the methods the frontend uses, OPTIONS included for preflight checks
+#2.1-)Exactly the methods the frontend use
 ALLOWED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 
+#2.2-) Content Type
 '''
-2.2-)Exactly the request headers the frontend sends:
   Content-Type   -> so JSON bodies are accepted on POST, PUT and PATCH
   Authorization  -> reserved for when this API starts authenticating callers
 '''
