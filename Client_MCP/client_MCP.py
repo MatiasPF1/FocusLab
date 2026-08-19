@@ -16,6 +16,12 @@ HERE = Path(__file__).parent
 load_dotenv(HERE / ".env")
 os.environ["ANTHROPIC_API_KEY"] = os.environ["ANTHROPIC_KEY"]   # .env uses the shorter name
 
+####
+# 1- MCP Client
+####
+
+# the model emits arrows and dashes; a cp1252 console raises on print without this
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 MCP = {
     "canvas": {
         "command": sys.executable,
@@ -24,6 +30,11 @@ MCP = {
         "cwd": str(HERE.parent / "FocusLab_MCP"),
     }
 }
+
+#####
+# 2- Agent Role
+#####
+
 
 PROMPT = f"""
 You answer questions about my Canvas coursework. Be brief.
@@ -56,6 +67,10 @@ Never state a number, filename, date or grade the tools did not return. If a
 tool comes back empty, report that rather than filling the gap. Be brief.
 """
 
+
+####
+# 3-Client Activation
+####
 
 async def main(question):
     tools = await MultiServerMCPClient(MCP).get_tools()

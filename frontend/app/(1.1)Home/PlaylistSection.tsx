@@ -59,13 +59,6 @@ type PlayerState = {
   device_name: string | null;
 };
 
-// One entry from the account's real Spotify listening history.
-type RecentlyPlayedTrack = {
-  track_uri: string;
-  track_name: string;
-  artist_name: string;
-};
-
 export default function PlaylistSection() {
   const [queues, setQueues] = useState<Queue[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -86,9 +79,6 @@ export default function PlaylistSection() {
 
   // What Spotify is currently playing
   const [player, setPlayer] = useState<PlayerState | null>(null);
-
-  // The account's real listening history, shown underneath the queue list.
-  const [recentlyPlayed, setRecentlyPlayed] = useState<RecentlyPlayedTrack[]>([]);
 
   /*
    * The connection status and the Spotify Web Playback SDK player both live in
@@ -149,31 +139,6 @@ export default function PlaylistSection() {
     return () => {
       cancelled = true;
       clearInterval(timer);
-    };
-  }, [connected]);
-
-  /*
-   * Load the account's real listening history once, after we know Spotify is
-   * connected. Older connections made before this feature existed will not
-   * have granted the recently-played scope yet, so a failure here just means
-   * an empty list rather than an error worth showing.
-   */
-  useEffect(() => {
-    if (connected !== true) return;
-
-    let cancelled = false;
-
-    fetch(`${API_URL}/spotify/recently-played`)
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data) => {
-        if (!cancelled) setRecentlyPlayed(data);
-      })
-      .catch(() => {
-        // Silent: this list is a nice-to-have, not core functionality.
-      });
-
-    return () => {
-      cancelled = true;
     };
   }, [connected]);
 
@@ -405,7 +370,7 @@ export default function PlaylistSection() {
     <div className="bg-ob-surface border border-ob-line/60 rounded-2xl p-6 flex flex-col w-full text-left">
       <div className="flex items-center justify-between">
         <div>
-          {/* Same small tracked-caps label used for "TIME TO FOCUS" and "RECENTLY PLAYED" */}
+          {/* Same small tracked-caps label used for "TIME TO FOCUS" */}
           <p className="text-[10px] font-semibold text-ob-slate tracking-[0.2em]">
             SPOTIFY
           </p>
@@ -695,30 +660,6 @@ export default function PlaylistSection() {
         <p className="mt-4 text-xs text-ob-slate text-center py-4">
           Connect Spotify to start adding queues.
         </p>
-      )}
-
-      {/* The account's real listening history, independent of any saved queue */}
-      {recentlyPlayed.length > 0 && (
-        <div className="mt-6">
-          <h4 className="text-[11px] font-semibold text-ob-slate tracking-[0.2em]">
-            RECENTLY PLAYED
-          </h4>
-          <ul className="mt-2.5 flex flex-col gap-1.5">
-            {recentlyPlayed.map((track) => (
-              <li
-                key={track.track_uri}
-                className="flex items-center gap-2 text-sm text-ob-slate min-w-0"
-              >
-                <span className="w-1 h-1 rounded-full bg-ob-slate shrink-0" />
-                <span className="truncate">
-                  <span className="text-ob-mist">{track.track_name}</span>
-                  {" — "}
-                  {track.artist_name}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
       )}
     </div>
   );

@@ -1,5 +1,6 @@
 import PomodoroTimer from "./PomodoroTimer";
 import PlaylistSection from "./PlaylistSection";
+import TasksSection from "./TasksSection";
 
 // The Sidebar and the surrounding flex shell now live in AppShell, so every
 // dashboard page (this one included) contributes only its own content.
@@ -20,6 +21,7 @@ export default function HomePage() {
       {/* Queues get their own column so a long track/history list scrolls on its own, independent of the timer */}
       <aside className="w-96 shrink-0 border-l border-ob-line/60 p-6 overflow-y-auto">
         <PlaylistSection />
+        <TasksSection />
       </aside>
     </>
   );

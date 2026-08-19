@@ -7,28 +7,49 @@ FocusLab_MCP/server.py wraps the same functions as MCP tools for the agent.
 
 import os
 import re
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import httpx
 from dotenv import load_dotenv
 
-_ROOT = Path(__file__).resolve().parents[3]          # repo root
-load_dotenv(next((e for e in (_ROOT / "Client_MCP" / ".env", _ROOT / "backend" / ".env")
-                  if e.exists()), _ROOT / ".env"))
+_BACKEND = Path(__file__).resolve().parents[2]       # backend/, the only path the container has
+_ROOT = _BACKEND.parent                              # repo root, present when run from a checkout
+load_dotenv(next((e for e in (_ROOT / "Client_MCP" / ".env", _BACKEND / ".env")
+                  if e.exists()), _BACKEND / ".env"))
 
-_canvas = httpx.Client(
-    base_url=f"{os.environ['CANVAS_URL']}/api/v1",
-    headers={"Authorization": f"Bearer {os.environ['CANVAS_TOKEN']}"},
-    timeout=30,
-)
+_client = None
+
+
+def _canvas():
+    """The Canvas http client, built on first use rather than on import.
+
+    main.py imports this package to mount the routes, so building the client at
+    import time meant an unset CANVAS_TOKEN stopped the whole API from starting
+    - Spotify included - instead of only failing the Canvas routes.
+    """
+    global _client
+    if _client is None:
+        try:
+            base, token = os.environ["CANVAS_URL"], os.environ["CANVAS_TOKEN"]
+        except KeyError as missing:
+            raise RuntimeError(f"Canvas is not configured: {missing} is unset") from None
+        _client = httpx.Client(
+            base_url=f"{base}/api/v1",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=30,
+        )
+    return _client
 
 # Canvas hides unpublished courses unless asked, and unpublished is where next
 # semester lives. Always send all three states.
 _STATES = ["unpublished", "available", "completed"]
 
+DOWNLOADS = Path.home() / "Downloads"
+
 
 def _get(path, **params):
-    reply = _canvas.get(path, params={"per_page": 100, **params})   # default page size is 10
+    reply = _canvas().get(path, params={"per_page": 100, **params})   # default page size is 10
     reply.raise_for_status()
     return reply.json()
 
@@ -73,6 +94,34 @@ def get_grades(term=None):
     return out
 
 
+def get_assignments(course_id):
+    """Every assignment, grouped the way the Canvas Assignments page groups them.
+
+    That page buckets by due date rather than by module - Upcoming / Undated /
+    Past - so it is the other view of a course, next to get_modules. `group` is
+    the weighted category the assignment counts toward ("Homework", "Exams"),
+    which is what actually drives the final grade.
+    """
+    groups = {g["id"]: g["name"] for g in _get(f"/courses/{course_id}/assignment_groups")}
+    now = datetime.now(timezone.utc)
+    buckets = {"Upcoming": [], "Undated": [], "Past": []}
+    for a in _get(f"/courses/{course_id}/assignments", **{"include[]": "submission"}):
+        due = a.get("due_at")
+        if not due:
+            when = "Undated"
+        else:
+            when = "Upcoming" if datetime.fromisoformat(due) >= now else "Past"
+        s = a.get("submission") or {}
+        buckets[when].append({
+            "name": a["name"],
+            "group": groups.get(a.get("assignment_group_id")),
+            "due": (due or "")[:10] or None,
+            "score": s.get("score"),
+            "possible": a.get("points_possible"),
+            "state": s.get("workflow_state"),
+        })
+    return [{"bucket": b, "assignments": v} for b, v in buckets.items() if v]
+
 def get_assignment_grades(course_id, graded_only=False):
     """Every assignment in one course with my score."""
     out = []
@@ -100,6 +149,66 @@ def get_unsubmitted(course_id):
     ]
 
 
+def get_tasks(start=None, days=7):
+    """Assignments due inside a window, for the tasks panel in the UI.
+
+    Scans only courses whose term overlaps the window, so this costs a handful
+    of calls rather than one per course in the account. Courses on a term with
+    no dates at all are sandboxes, not a semester, and are skipped.
+
+    `done` counts anything submitted or graded, which is what the ring shows.
+    """
+    begin = date.fromisoformat(start) if start else date.today()
+    finish = begin + timedelta(days=days)
+    lo, hi = begin.isoformat(), finish.isoformat()
+
+    courses = []
+    for c in _get("/courses", **{"include[]": ["term", "teachers"], "state[]": _STATES}):
+        if c.get("access_restricted_by_date"):
+            continue
+        t = c.get("term") or {}
+        t_start, t_end = (t.get("start_at") or "")[:10], (t.get("end_at") or "")[:10]
+        if not t_start and not t_end:
+            continue
+        if (t_start and t_start > hi) or (t_end and t_end < lo):
+            continue
+        courses.append(c)
+
+    colors = _get("/users/self/colors").get("custom_colors", {})
+    tasks = []
+    for c in courses:
+        try:
+            items = _get(f"/courses/{c['id']}/assignments", **{"include[]": "submission"})
+        except httpx.HTTPStatusError:
+            continue                     # course is listed but its assignments are not readable
+        teachers = [t.get("display_name") for t in (c.get("teachers") or []) if t.get("display_name")]
+        for a in items:
+            due = a.get("due_at") or ""
+            if not (lo <= due[:10] < hi):
+                continue
+            s = a.get("submission") or {}
+            tasks.append({
+                "id": a["id"],
+                "course": c.get("course_code"),          # the readable name, see list_courses
+                "course_id": c["id"],
+                "teacher": teachers[0].split()[-1] if teachers else None,   # surname, as Canvas shows it
+                "color": colors.get(f"course_{c['id']}"),
+                "title": a["name"],
+                "due": due,
+                "points": a.get("points_possible"),
+                "done": s.get("workflow_state") in ("submitted", "graded"),
+                "link": a.get("html_url"),
+            })
+
+    tasks.sort(key=lambda t: t["due"])
+    return {
+        "start": lo,
+        "end": hi,
+        "done": sum(1 for t in tasks if t["done"]),
+        "total": len(tasks),
+        "tasks": tasks,
+    }
+
 def _file(file_id):
     """One Canvas file. `url` is pre-signed and expires, so fetch it soon after."""
     try:
@@ -120,6 +229,10 @@ def get_modules(course_id):
 
     This is the Modules page. Items are Assignment / Page / File / ExternalUrl /
     SubHeader; only File items carry a real download, reached via content_id.
+
+    Canvas stores items as one flat ordered list, not a tree: nesting lives in
+    `indent`, which is what the web UI renders as indentation. indent=1 under an
+    indent=0 assignment is that assignment's attachment, so it is kept.
     """
     out = []
     for m in _get(f"/courses/{course_id}/modules", **{"include[]": "items"}):
@@ -131,7 +244,10 @@ def get_modules(course_id):
             row = {
                 "type": it["type"],
                 "title": it.get("title"),
-                "link": it.get("html_url") or it.get("external_url"),
+                "indent": it.get("indent", 0),      # 0 = top level, 1 = under the item above
+                # ExternalUrl always carries an html_url too, but it is only a
+                # module_item_redirect stub - the real destination is external_url
+                "link": it.get("external_url") or it.get("html_url"),
                 "file": None,
             }
             if it["type"] == "File" and it.get("content_id"):
@@ -159,6 +275,63 @@ def get_assignment_files(course_id):
             out.append({"assignment": a["name"], "files": files, "links": links})
     return out
 
+
+def _safe(name):
+    """A bare filename: no separators, no traversal, no drive letter."""
+    name = re.sub(r"[^\w.\- ]", "_", Path(str(name)).name).strip(". ")
+    return name or "untitled"
+
+
+def get_page_files(course_id, page=None):
+    """Files embedded in each module Page - where lecture slides actually live.
+
+    A Page item in get_modules has file=None: its PDFs are links inside the page
+    body, so every page has to be fetched and scraped the way assignments are.
+    `page` is a substring match on the page title ("Lecture 1"), and it skips the
+    fetch, so narrowing turns a ~30s sweep of the course into about a second.
+    """
+    out = []
+    for m in _get(f"/courses/{course_id}/modules", **{"include[]": "items"}):
+        items = m.get("items")
+        if items is None:
+            items = _get(f"/courses/{course_id}/modules/{m['id']}/items")
+        for it in items:
+            if it["type"] != "Page" or not it.get("page_url"):
+                continue
+            if page and page.lower() not in (it.get("title") or "").lower():
+                continue
+            body = _get(f"/courses/{course_id}/pages/{it['page_url']}").get("body") or ""
+            ids = dict.fromkeys(re.findall(r"/files/(\d+)", body))     # dedupe, keep order
+            files = [f for f in (_file(i) for i in ids) if f]
+            if files:
+                out.append({"module": m["name"], "page": it["title"], "files": files})
+    return out
+
+
+def download(file_ids, folder):
+    """Save Canvas files into ~/Downloads/<folder>. Returns what landed on disk.
+
+    Folder and filenames come from Canvas or a caller, so both go through _safe:
+    nothing written here may escape Downloads. The file url is already
+    pre-signed, so it is fetched without our token attached.
+    """
+    dest = DOWNLOADS / _safe(folder)
+    dest.mkdir(parents=True, exist_ok=True)
+    out = []
+    for fid in file_ids:
+        f = _file(fid)
+        if not f or not f.get("url"):
+            out.append({"id": fid, "error": "no readable file"})
+            continue
+        path = dest / _safe(f["name"] or f"canvas-{fid}")
+        with httpx.stream("GET", f["url"], follow_redirects=True, timeout=60) as r:
+            r.raise_for_status()
+            with open(path, "wb") as fh:
+                for chunk in r.iter_bytes():
+                    fh.write(chunk)
+        out.append({"name": path.name, "kb": round(path.stat().st_size / 1024),
+                    "path": str(path)})
+    return out
 
 if __name__ == "__main__":
     for c in get_grades("2026 Spring"):

@@ -11,6 +11,7 @@ from apis.spotify import router as spotify_router
 from apis.queues import router as queues_router
 from apis.todo import router as todo_router
 from apis.Retrieving_Keys import router as keys_router
+from apis.canvas import router as canvas_router
 
 #0-Load backend /.env before routes read configuration from the environment.
 load_dotenv(Path(__file__).with_name(".env"))
@@ -90,3 +91,6 @@ app.include_router(todo_router)
 
 # Connect the setup-page credential routes to the main application
 app.include_router(keys_router)
+
+# Connect Canvas routes to the main application
+app.include_router(canvas_router)
