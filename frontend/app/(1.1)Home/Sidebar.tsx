@@ -6,8 +6,8 @@ import { Home, FileText, CheckSquare, Sparkles, Calendar } from "lucide-react";
 
 const NAV_ITEMS = [
   { label: "Home", icon: Home, href: "/(1.1)Home" },
-  { label: "Notebook", icon: FileText, href: "/(1.2)Notebook" },
   { label: "To-Do", icon: CheckSquare, href: "/(1.3)To-Do" },
+  { label: "Notebook", icon: FileText, href: "/(1.2)Notebook" },
   { label: "AI Study", icon: Sparkles, href: "/(1.4)AI_Study" },
   { label: "Calendar", icon: Calendar, href: "/(1.5)Calendar" },
 ];

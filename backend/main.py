@@ -5,11 +5,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-from routers.database import create_db_and_tables
+from database import create_db_and_tables
 
-from routers import queues_get, queues_post, spotify_get, spotify_post  # noqa: F401
-from routers.queues import router as queues_router
-from routers.spotify import router as spotify_router
+from apis.spotify import router as spotify_router
+from apis.queues import router as queues_router
+from apis.todo import router as todo_router
+from apis.Retrieving_Keys import router as keys_router
 
 #0-Load backend /.env before routes read configuration from the environment.
 load_dotenv(Path(__file__).with_name(".env"))
@@ -80,10 +81,10 @@ def on_startup():
 ##########
 
 '''
-Both routers are already carrying every route by this point, because importing
-the _get and _post modules above ran their decorators. FastAPI matches on method
-as well as path, so /queues GET and /queues POST live in different files without
-ever clashing.
+Each router is already carrying every route by this point: importing a service
+package ran the decorators in every verb file under its routes/ folder. FastAPI
+matches on method as well as path, so /queues GET and /queues POST live in
+different files without ever clashing.
 '''
 
 # Connect Spotify routes to the main application
@@ -91,3 +92,9 @@ app.include_router(spotify_router)
 
 # Connect Queue routes to the main application
 app.include_router(queues_router)
+
+# Connect To-Do note routes to the main application
+app.include_router(todo_router)
+
+# Connect the setup-page credential routes to the main application
+app.include_router(keys_router)

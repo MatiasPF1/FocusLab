@@ -1,103 +1,42 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { SkipBack, Pause, Play, SkipForward } from "lucide-react";
+import { usePomodoroContext } from "../PomodoroProvider";
 
-// Constants/Variables 
+// Constants/Variables
 const PRESETS = [5, 15, 25, "custom"] as const;
-const DEFAULT_MINUTES = 25;
-type Preset = (typeof PRESETS)[number];
 
 //###################################################################################################################################################################
 //                                                     LOGIC
 //##########################################################################################################################################################################
 
 // Turns  seconds count into "Minutes:Second" for display.
-function formatTime(totalSeconds: number) 
+function formatTime(totalSeconds: number)
 {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+// State lives in PomodoroProvider (mounted once by AppShell) rather than
+// here, so the running countdown survives navigating to another page and
+// back instead of resetting every time this component unmounts.
 export default function PomodoroTimer() {
-  // Which preset is currently selected
-  const [preset, setPreset] = useState<Preset>(DEFAULT_MINUTES);
-  // Minutes typed into the custom field
-  const [customMinutes, setCustomMinutes] = useState(DEFAULT_MINUTES);  // Minutes
-  const [secondsLeft, setSecondsLeft] = useState(DEFAULT_MINUTES * 60); // Seconds
-  const [isRunning, setIsRunning] = useState(false);                    // Start Is Off
-  // Which session this is, counted up only when one actually runs to zero.
-  const [sessionCount, setSessionCount] = useState(1);
-
-
-
-  // Tick the countdown down once a second while running.
-  useEffect(() =>
-    {
-    if (!isRunning)
-      {
-         return;                   // Not Running
-      }
-    if (secondsLeft <= 0)
-      {
-      setIsRunning(false);       // Stop ticking once the session hits zero.
-      /*
-       * Only a countdown that actually reached zero while running counts as a
-       * finished session. skipForward sets isRunning to false in the same
-       * update, so it never enters this branch and never counts one.
-       */
-      setSessionCount((current) => current + 1);
-      return;
-      }
-
-    const intervalId = setInterval(() =>
-    {
-      setSecondsLeft((current) => current - 1);
-    }, 1000
-    );
-    // Clear the interval whenever this effect re-runs or unmounts,so we never end up with multiple timers ticking at once
-    return () => clearInterval(intervalId);
-    },[isRunning, secondsLeft]);
-
-
-
-  // Applies a preset/custom length: stops the timer and resets the clock to it.
-  function selectPreset(next: Preset) {
-    setPreset(next);
-    setIsRunning(false);
-    const minutes = next === "custom" ? customMinutes : next;
-    setSecondsLeft(minutes * 60);
-  }
-
-  // While on the custom preset, editing the minutes field live-updates the clock.
-  function handleCustomMinutesChange(value: number) {
-    const minutes = Number.isNaN(value) ? 0 : Math.max(0, value);
-    setCustomMinutes(minutes);
-    setIsRunning(false);
-    setSecondsLeft(minutes * 60);
-  }
-
-  function togglePlayPause() {
-    setIsRunning((current) => !current);
-  }
-
-  // "Skip back" restarts the current session from the top.
-  function skipBack() {
-    const minutes = preset === "custom" ? customMinutes : preset;
-    setSecondsLeft(minutes * 60);
-  }
-
-  // "Skip forward" ends the current session immediately.
-  function skipForward() {
-    setSecondsLeft(0);
-    setIsRunning(false);
-  }
-
-
+  const {
+    preset,
+    customMinutes,
+    secondsLeft,
+    isRunning,
+    sessionCount,
+    selectPreset,
+    handleCustomMinutesChange,
+    togglePlayPause,
+    skipBack,
+    skipForward,
+  } = usePomodoroContext();
 
   // ######################################################################################################################################################################################################
-  //                                        UI Representation 
+  //                                        UI Representation
   // #####################################################################################################################################################################################################
 
   return (
