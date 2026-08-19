@@ -211,10 +211,11 @@ One package per service, one file per HTTP method — a path says what the code 
 backend/
 ├── main.py                      app, CORS, router mounting
 ├── database.py                  engine + per-request session
-├── models_Queues.py             Queue, QueueTrack + schemas
-├── models_Spotify.py            SpotifyToken
-├── models_ToDo.py               Note + schemas
-├── models_Keys.py               ApiCredentials + schemas
+├── models/                      one module per service, mirroring apis/
+│   ├── queues.py                Queue, QueueTrack + schemas
+│   ├── spotify.py               SpotifyToken
+│   ├── todo.py                  Note + schemas
+│   └── keys.py                  ApiCredentials + schemas
 └── apis/
     ├── spotify/
     │   ├── router.py            the APIRouter, alone (breaks the import cycle)

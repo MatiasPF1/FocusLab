@@ -1,22 +1,26 @@
 @import "tailwindcss";
 
 /*
-  Midnight Obsidian
-  ----------------
-  Primary   #2C3E50   Secondary #4A5568
-  Tertiary  #D1D5DB   Neutral   #121212
+  Neutral Dark
+  ------------
+  Surfaces follow Notion's dark theme: a neutral grey ramp with no hue in it,
+  so the greys never fight whatever colour a page puts on top of them.
 
-  base / surface / raised are the Primary hue carried down into the dark end of
-  its ramp, so every panel sits on the same blue rather than on a neutral grey.
+  Steps are deliberately close together (#191919 → #202020 → #2f2f2f). Depth
+  reads from the borders between panels, not from strong jumps in lightness,
+  which is why ob-line does real work here rather than being decoration.
+
+  Previously "Midnight Obsidian", a blue-tinted ramp:
+    base #0e141c · surface #17212e · raised #1f2c3c · line #2c3e50 · void #121212
 */
 @theme {
-  --color-ob-base: #0e141c;      /* page background        */
-  --color-ob-surface: #17212e;   /* cards and panels       */
-  --color-ob-raised: #1f2c3c;    /* nested blocks, hover   */
-  --color-ob-line: #2c3e50;      /* Primary   — borders    */
-  --color-ob-slate: #4a5568;     /* Secondary — muted text */
-  --color-ob-mist: #d1d5db;      /* Tertiary  — body text  */
-  --color-ob-void: #121212;      /* Neutral   — deepest    */
+  --color-ob-base: #191919;      /* page background        */
+  --color-ob-surface: #202020;   /* cards and panels       */
+  --color-ob-raised: #2f2f2f;    /* nested blocks, hover   */
+  --color-ob-line: #373737;      /* borders                */
+  --color-ob-slate: #9b9b9b;     /* muted text             */
+  --color-ob-mist: #d4d4d4;      /* body text              */
+  --color-ob-void: #141414;      /* deepest                */
 
   /* Kept for the landing page, which styles its copy with text-primary */
   --color-primary: #d1d5db;

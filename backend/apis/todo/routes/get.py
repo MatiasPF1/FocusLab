@@ -12,7 +12,7 @@ The router and the shared plumbing they all use live in apis/todo/core.py.
 from fastapi import Depends
 from sqlmodel import Session, select
 
-from models_ToDo import Note, NoteRead
+from models.todo import Note, NoteRead
 from database import get_session
 from apis.todo.core import get_note_or_404, router
 

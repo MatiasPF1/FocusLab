@@ -10,7 +10,7 @@ The base of everything note related. Two things live here:
 from fastapi import APIRouter, HTTPException
 from sqlmodel import Session
 
-from models_ToDo import Note
+from models.todo import Note
 
 
 ##########

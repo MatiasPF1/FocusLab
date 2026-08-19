@@ -35,10 +35,7 @@ def create_db_and_tables():
     2-Create Tables
     '''
     #1-)Importing models registers every table class with SQLModel's metadata
-    import models_Queues  # noqa: F401 - registers Queue and QueueTrack
-    import models_Spotify  # noqa: F401 - registers SpotifyToken
-    import models_ToDo  # noqa: F401 - registers Note with SQLModel's metadata
-    import models_Keys  # noqa: F401 - registers ApiCredentials with SQLModel's metadata
+    import models  # noqa: F401 - its __init__ imports every model module
     #2-)Creates tables that don't exist yet (does nothing to tables that already exist)
     SQLModel.metadata.create_all(engine)
 

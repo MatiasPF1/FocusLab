@@ -13,7 +13,7 @@ apis/Retrieving_Keys/core.py.
 from fastapi import Depends, HTTPException
 from sqlmodel import Session
 
-from models_Keys import ApiCredentialsStatus, ApiCredentialsUpdate
+from models.keys import ApiCredentialsStatus, ApiCredentialsUpdate
 from database import get_session
 from apis.Retrieving_Keys.core import (
     describe_active_source,

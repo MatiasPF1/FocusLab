@@ -21,7 +21,7 @@ import httpx    # Lets FastAPI send asynchronous HTTP requests to Spotify
 from fastapi import Depends, HTTPException
 from fastapi.responses import RedirectResponse
 from sqlmodel import Session
-from models_Spotify import SpotifyToken
+from models.spotify import SpotifyToken
 from database import get_session
 from apis.spotify.router import router
 

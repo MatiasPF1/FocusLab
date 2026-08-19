@@ -12,7 +12,7 @@ from datetime import datetime
 from fastapi import Depends
 from sqlmodel import Session
 
-from models_ToDo import NoteRead, NoteUpdate
+from models.todo import NoteRead, NoteUpdate
 from database import get_session
 from apis.todo.core import get_note_or_404, router
 

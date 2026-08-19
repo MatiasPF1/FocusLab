@@ -14,7 +14,7 @@ apis/Retrieving_Keys/core.py.
 from fastapi import Depends
 from sqlmodel import Session
 
-from models_Keys import ApiCredentialsStatus
+from models.keys import ApiCredentialsStatus
 from database import get_session
 from apis.Retrieving_Keys.core import (
     describe_active_source,

@@ -14,7 +14,7 @@ all onto the router below.
 from fastapi import APIRouter, HTTPException
 from sqlmodel import Session
 
-from models_Queues import Queue
+from models.queues import Queue
 
 
 ##########

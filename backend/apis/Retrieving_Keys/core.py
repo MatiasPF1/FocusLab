@@ -20,7 +20,7 @@ from datetime import datetime
 from fastapi import APIRouter
 from sqlmodel import Session
 
-from models_Keys import ApiCredentials
+from models.keys import ApiCredentials
 
 
 ##########

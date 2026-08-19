@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { FilePlus, Plus, Trash2 } from "lucide-react";
 import NoteEditor, { previewText, type Note } from "./NoteEditor";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -215,36 +215,68 @@ export default function ToDoPage() {
 
   return (
     <section className="flex-1 overflow-y-auto p-6">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 pt-10">
+      <div className="mx-auto flex w-full max-w-5xl flex-col pt-10">
+        {/* Greeting: a quiet prompt above a heading that carries the weight */}
         <header>
-          <h2 className="text-4xl font-bold text-ob-mist">To-Do</h2>
-          <p className="mt-2 text-sm text-ob-slate">
-            Keep quick notes close while you work.
-          </p>
+          <p className="text-sm text-ob-slate">Ready to start taking notes?</p>
+          <h2 className="mt-1 text-3xl font-bold tracking-tight text-white">
+            Your Notes
+          </h2>
         </header>
 
-        {error && <p className="text-xs text-red-400">{error}</p>}
+        {/* Section bar: label on the left, the only real action on the right */}
+        <div className="mt-10 flex items-center justify-between">
+          <h3 className="text-xl font-semibold text-white">Notes</h3>
+          <button
+            type="button"
+            onClick={createNote}
+            className="rounded-md p-1.5 text-ob-slate transition hover:bg-ob-raised hover:text-ob-mist focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ob-line"
+            aria-label="New note"
+            title="New note"
+          >
+            <FilePlus aria-hidden="true" size={19} strokeWidth={1.8} />
+          </button>
+        </div>
 
-        <button
-          type="button"
-          onClick={createNote}
-          className="flex min-h-12 w-full items-center justify-center gap-2 rounded-md bg-[#4ac96b] px-5 py-3 text-lg font-medium text-[#101713] shadow-sm transition hover:bg-[#58d476] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4ac96b] active:scale-[0.995]"
-        >
-          <Plus aria-hidden="true" size={21} strokeWidth={2} />
-          Note
-        </button>
+        {/* Sorting is always newest-first, so this reads as a label, not a control */}
+        <div className="mt-3">
+          <span className="inline-block rounded-full border border-ob-line bg-ob-raised/60 px-3 py-1 text-xs font-medium text-ob-mist">
+            Recent
+          </span>
+        </div>
+
+        {error && <p className="mt-3 text-xs text-red-400">{error}</p>}
 
         {!loading && sortedNotes.length === 0 ? (
-          <p className="py-10 text-center text-sm text-ob-slate">
-            No notes yet — add one above.
-          </p>
+          <button
+            type="button"
+            onClick={createNote}
+            className="mt-4 flex h-[300px] w-[210px] shrink-0 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-ob-line text-ob-slate transition hover:border-ob-mist hover:text-ob-mist"
+          >
+            <Plus aria-hidden="true" size={22} strokeWidth={1.8} />
+            <span className="text-sm">New note</span>
+          </button>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          /*
+           * One horizontal row rather than a wrapping grid: notes stay on a
+           * single line ordered by recency, so the newest is always in the same
+           * place. The scrollbar is styled rather than hidden, since with no
+           * arrows it is the only cue that there is more to the right.
+           */
+          <div
+            className="mt-4 flex gap-3 overflow-x-auto pb-3
+                       [&::-webkit-scrollbar]:h-1.5
+                       [&::-webkit-scrollbar-track]:rounded-full
+                       [&::-webkit-scrollbar-track]:bg-ob-raised/50
+                       [&::-webkit-scrollbar-thumb]:rounded-full
+                       [&::-webkit-scrollbar-thumb]:bg-ob-line
+                       hover:[&::-webkit-scrollbar-thumb]:bg-ob-slate"
+          >
             {sortedNotes.map((note) => (
               <article
                 key={note.id}
                 onClick={() => setActiveNoteId(note.id)}
-                className="group relative flex min-h-32 cursor-pointer flex-col justify-between gap-3 rounded-xl border border-ob-line/60 bg-ob-surface p-4 transition hover:border-ob-line"
+                className="group relative flex h-[300px] w-[210px] shrink-0 cursor-pointer flex-col rounded-xl border border-ob-line/60 bg-ob-surface p-4 transition hover:border-ob-line hover:bg-ob-raised/40"
               >
                 <button
                   type="button"
@@ -258,16 +290,17 @@ export default function ToDoPage() {
                   <Trash2 aria-hidden="true" size={15} />
                 </button>
 
-                <div className="min-w-0">
-                  <p className="truncate pr-6 font-semibold text-ob-mist">
+                {/* min-h-0 lets the preview shrink so the date keeps its slot */}
+                <div className="min-h-0 flex-1">
+                  <p className="line-clamp-2 pr-6 font-semibold leading-snug text-white">
                     {note.title.trim() || "Untitled"}
                   </p>
-                  <p className="mt-2 line-clamp-4 text-sm leading-6 text-ob-slate">
+                  <p className="mt-2 line-clamp-[9] text-[13px] leading-[1.5] text-ob-slate">
                     {previewText(note.content) || "No content yet"}
                   </p>
                 </div>
 
-                <p className="text-xs text-ob-slate/70">
+                <p className="mt-3 shrink-0 text-xs text-ob-slate/70">
                   {formatCardDate(note.updated_at)}
                 </p>
               </article>

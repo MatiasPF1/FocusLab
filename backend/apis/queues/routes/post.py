@@ -11,7 +11,7 @@ The router and the shared plumbing they all use live in apis/queues/core.py.
 from fastapi import Depends, HTTPException
 from sqlmodel import Session, select
 
-from models_Queues import (
+from models.queues import (
     Queue,
     QueueCreate,
     QueueRead,
