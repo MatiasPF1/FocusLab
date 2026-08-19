@@ -28,9 +28,6 @@ app = FastAPI(
 ##########
 
 '''
-CORS decides which websites' JavaScript is allowed to read answers from this
-API. It is enforced by the browser, not by us.
-
 What it stops:
 -a page on some other site, open in the same browser, quietly
 calling this API in the background and reading the reply.
