@@ -4,3 +4,7 @@
 langgraph
 langchain-mcp-adapters
 langchain-anthropic
+
+# http_MCP.py, the HTTP endpoint the frontend chat panel posts to.
+fastapi
+uvicorn[standard]

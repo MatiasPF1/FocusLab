@@ -20,6 +20,11 @@ _spec = importlib.util.spec_from_file_location("focuslab_canvas_core", _CORE)
 canvas = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(canvas)
 
+# Notes, unlike Canvas, are the user's own writing and live in the backend's
+# database, so this half goes over the /notes API rather than being loaded off
+# disk. Plain import: notes.py sits next to this file.
+import notes as notes_store
+
 ####
 #MCP Server Creation
 ####
@@ -231,6 +236,55 @@ def get_unsubmitted(course_id: int) -> list[dict]:
         course_id: Canvas course id from list_courses, e.g. 85395.
     """
     return canvas.get_unsubmitted(course_id)
+
+
+####
+# 6- The user's own notes
+# a two-step pair: names first, bodies second - ids are never guessable
+####
+
+@mcp.tool()
+def list_notes() -> list[dict]:
+    """Every note the user has written, most recently edited first.
+
+    ALWAYS CALL THIS BEFORE read_notes. It is the only place note ids come
+    from; there is no other way to learn one, and an invented id either fails
+    or reads back the wrong note. Nothing here is guessable from a title.
+
+    Each note gives its id, title, a one-line preview, how many characters the
+    body runs to, and when it was last edited. Titles are optional in the
+    editor, so an untitled note comes back as "(untitled)" and the preview is
+    the only thing identifying it - read the preview, not just the title, when
+    matching what the user asked for.
+
+    Match titles loosely and case-insensitively, on substrings, the same way
+    course names are matched. If several notes could be the one meant, read
+    them all rather than guessing between them; the bodies settle it.
+    """
+    return notes_store.list_notes()
+
+
+@mcp.tool()
+def read_notes(note_ids: list[int]) -> list[dict]:
+    """Full text of particular notes, for answering questions about what is in them.
+
+    REQUIRES list_notes FIRST. Every id passed here must have come from a
+    list_notes result in this conversation - never from the user, never from a
+    guess, never carried over from a previous question about a different note.
+
+    Takes several ids at once, so a question spanning a few notes is one call
+    rather than one per note. An id with no note behind it comes back carrying
+    an `error` instead of content, and the rest are still returned.
+
+    Bodies are stored as HTML by the note editor and are flattened to plain
+    text here, so a pasted screenshot arrives as the marker [image] - the
+    picture itself cannot be read, and guessing at what it showed is wrong.
+
+    Args:
+        note_ids: note ids from list_notes, e.g. [3, 7].
+    """
+    return notes_store.read_notes(note_ids)
+
 
 if __name__ == "__main__":
     mcp.run()

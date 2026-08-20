@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import Sidebar from "./(1.1)Home/Sidebar";
 import { SpotifyPlayerProvider } from "./SpotifyPlayerProvider";
 import { PomodoroProvider } from "./PomodoroProvider";
+import FocusAIPanel from "./(1.1)Home/FocusAIPanel";
 
 /*
  * Mounted once by the root layout and never torn down by client-side
@@ -25,6 +27,9 @@ export default function AppShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  // The FocusAI chat floats over whichever page is showing, so its open state
+  // belongs here alongside the sidebar rather than inside any one page.
+  const [focusAIOpen, setFocusAIOpen] = useState(false);
   // Next may hand back the parentheses percent-encoded depending on how the
   // route was reached, so compare against the decoded path.
   const currentPath = decodeURIComponent(pathname);
@@ -38,8 +43,12 @@ export default function AppShell({
     <SpotifyPlayerProvider>
       <PomodoroProvider>
         <div className="h-screen w-screen bg-ob-base text-ob-mist flex">
-          <Sidebar />
+          <Sidebar
+            focusAIOpen={focusAIOpen}
+            onToggleFocusAI={() => setFocusAIOpen((open) => !open)}
+          />
           {children}
+          {focusAIOpen && <FocusAIPanel onClose={() => setFocusAIOpen(false)} />}
         </div>
       </PomodoroProvider>
     </SpotifyPlayerProvider>

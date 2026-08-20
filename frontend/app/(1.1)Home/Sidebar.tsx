@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, FileText, CheckSquare, Sparkles, Calendar } from "lucide-react";
+import { Home, FileText, CheckSquare, Sparkles, Calendar, Bot } from "lucide-react";
 
 const NAV_ITEMS = [
   { label: "Home", icon: Home, href: "/(1.1)Home" },
@@ -12,8 +12,18 @@ const NAV_ITEMS = [
   { label: "Calendar", icon: Calendar, href: "/(1.5)Calendar" },
 ];
 
-// Shared left navigation sidebar, imported directly by each dashboard page.
-export default function Sidebar() {
+// Shared left navigation sidebar, rendered once by AppShell.
+//
+// The FocusAI tab at the foot of the sidebar is not a route — it toggles a
+// chat panel that floats over the page, so AppShell owns that state and passes
+// it down rather than the sidebar keeping its own copy.
+export default function Sidebar({
+  focusAIOpen,
+  onToggleFocusAI,
+}: {
+  focusAIOpen: boolean;
+  onToggleFocusAI: () => void;
+}) {
   const pathname = usePathname();
 
   return (
@@ -40,6 +50,19 @@ export default function Sidebar() {
           );
         })}
       </nav>
+
+      <button
+        type="button"
+        onClick={onToggleFocusAI}
+        className={`mt-auto flex items-center gap-2.5 rounded-lg border border-ob-line/60 px-3 py-2 text-sm transition-colors ${
+          focusAIOpen
+            ? "bg-ob-line/40 text-ob-mist"
+            : "text-ob-slate hover:border-ob-slate hover:text-ob-mist"
+        }`}
+      >
+        <Bot size={16} />
+        FocusAI
+      </button>
     </aside>
   );
 }

@@ -1,0 +1,16 @@
+# Applies to builds whose context is the repo root, which today means the
+# agent image (Client_MCP/Dockerfile). The backend and frontend build from
+# their own folders and use the .dockerignore inside each.
+.git
+__pycache__
+*.pyc
+.venv
+venv
+.env
+**/.env
+frontend/node_modules
+frontend/.next
+database
+*.db
+*.sqlite3
+docs

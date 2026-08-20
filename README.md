@@ -2,182 +2,40 @@
 
 # 🎯 FocusLab
 
-### Five study tools in one window. Spotify plays *inside the app*. Canvas coursework is queryable by an AI agent.
+### Five study tools in one window. Spotify plays *inside the app*. An AI agent reads your coursework and your notes — and hands you the PDFs.
 
-**No accounts. No cloud. No telemetry. Runs entirely on your machine.**
+**Runs entirely on your machine.**
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000?style=flat-square&logo=nextdotjs&logoColor=white)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-async-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org)
-[![MCP](https://img.shields.io/badge/MCP-9%20tools-8A63D2?style=flat-square)](https://modelcontextprotocol.io)
+[![MCP](https://img.shields.io/badge/MCP-11%20tools-8A63D2?style=flat-square)](https://modelcontextprotocol.io)
+[![Claude](https://img.shields.io/badge/Claude-agent-D97757?style=flat-square&logo=anthropic&logoColor=white)](https://www.anthropic.com)
 [![Spotify](https://img.shields.io/badge/Spotify-OAuth%202.0-1DB954?style=flat-square&logo=spotify&logoColor=white)](https://developer.spotify.com/documentation/web-api)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com)
 
 <img src="docs/screenshots/home.png" alt="FocusLab: Pomodoro timer, Spotify queue, and live Canvas tasks in one window" width="100%">
 
-| **6,300** | **28** | **9** | **5** |
+| **7,100** | **28** | **11** | **3** |
 |:---:|:---:|:---:|:---:|
-| lines of code | REST endpoints | MCP tools | workspaces |
+| lines of code | REST endpoints | MCP tools | containerised services |
 
 </div>
 
 ---
 
-## What this is
+## Three hard things, all built
 
-Studying is a coordination problem before it is a discipline problem. Five tools in five tabs, and every switch costs focus.
+**1 · FocusLab registers itself as a Spotify Connect device.** Audio streams into the app's own tab; the Spotify client never has to be open. Device targeting, DRM iframe permissions, self healing device IDs, and an OAuth flow the vendor documents incorrectly.
 
-Two parts are hard, and both are built here:
+**2 · FocusLab ships its own MCP server.** Eleven tools over Canvas LMS *and the user's own notes*, consumed by a LangGraph agent **and** by the app's REST API — from one framework free implementation, not two.
 
-**1. FocusLab registers itself as a Spotify Connect device.** Audio streams into the app's own tab. The Spotify client never has to be open. That required device targeting, DRM iframe permissions, self healing device IDs, and an OAuth flow the vendor documents incorrectly.
+**3 · The agent is a product surface.** FocusAI is a chat panel docked in the sidebar, running in its own container. Ask for Lectures 1 to 3 and the reply comes back as **clickable download chips**: pre signed Canvas URLs rendered as Markdown, not files written into a container you cannot reach.
 
-**2. FocusLab ships its own MCP server.** Nine tools over Canvas LMS, consumed by a LangGraph agent and by the app's own REST API from a single implementation. Ask "where are the homework solutions for Theory of Computation" and get real file names back.
+**Shipped end to end:** Home (Pomodoro · Spotify queues · live Canvas tasks) and FocusAI. **APIs done, UI pending:** To-Do, Notebook, Calendar.
 
----
-
-## What it demonstrates
-
-
-| Area | Evidence in this repo |
-|---|---|
-| **OAuth 2.0 from scratch** | Authorization Code flow, CSRF `state` with timing safe comparison, single use replay protection, 60s early token refresh. No auth library. |
-| **Protocol design (MCP)** | Own FastMCP server, 9 tools, stdio transport. Tool descriptions are the agent's only guidance channel, so every misleading default is documented in them. |
-| **Agent engineering** | LangGraph ReAct agent on Claude Haiku 4.5. Three separate failure classes found and fixed by hardening prompts and tool contracts, not by adding tools. |
-| **Zero duplication across surfaces** | `apis/canvas/core.py` is framework free, so the same functions serve FastAPI routes and MCP tools. The MCP server loads it by file path and never imports FastAPI. |
-| **Third party API archaeology** | Spotify and Canvas both return data that contradicts their docs. Both are handled by observation, documented inline. |
-| **Layered architecture** | The Spotify device fix touched *one function*, not twelve routes, because the layers were drawn correctly. |
-| **Security reasoning** | Threat model stated explicitly. LLM driven file writes are path sanitized. Pre signed URLs are fetched without forwarding credentials. |
-| **Containerisation** | One `docker compose up` from clone to running. |
-
----
-
-## Screenshots
-
-<div align="center">
-
-| Landing | Guided setup |
-|---|---|
-| <img src="docs/screenshots/landing.png" width="100%"> | <img src="docs/screenshots/setup-keys.png" width="100%"> |
-
-</div>
-
----
-
-## Workspaces
-
-| | Workspace | Purpose | State |
-|---|---|---|---|
-| 🏠 | **Home** | Pomodoro timer, Spotify queues, live Canvas tasks | ✅ **Shipped** |
-| ✅ | **To-Do** | Task and assignment tracking | API done, UI pending |
-| 📚 | **Notebook** | Session notes kept beside the work | API done, UI pending |
-| 🤖 | **AI Study** | Agent backed revision tools | MCP layer done, UI pending |
-| 📅 | **Calendar** | Deadlines and study scheduling | Routed, UI pending |
-
-Home is complete end to end: UI, API, database, and two third party integrations in production shape.
-
----
-
-## The Canvas MCP server
-
-Nine tools, ordered by hierarchy so the agent traverses a course the way a student does.
-
-```
-1  Find the course      list_courses
-2  Course structure     get_modules, get_assignments
-3  Content in an item   get_page_files, get_assignment_files
-4  Onto disk            download_files
-5  Grades               get_grades, get_assignment_grades, get_unsubmitted
-```
-
-Canvas fights you at every level. Four examples that are all handled:
-
-| What the API says | What is actually true |
-|---|---|
-| `name` is the course name | `name` is the section code (`2026S CS 334-A`). `course_code` holds the readable title (`Theory of Computation`). Inverted. |
-| Modules return a tree | Modules return a flat list. Nesting lives in `indent`, which is what the web UI renders. |
-| Lecture slides are files | Lecture slides are `<a href>` links inside a Page's HTML body. Module items report `file: null`. |
-| `ExternalUrl` items carry a link | `html_url` is a dead `module_item_redirect` stub. The real destination is `external_url`. |
-
-Downloads stream from Spotify style pre signed URLs that redirect across three hosts, so the Canvas token is never attached to the request. Filenames and folders both pass through a sanitizer: `../../evil.exe` becomes `evil.exe`, and nothing escapes `~/Downloads`.
-
----
-
-## Engineering highlights
-
-<details open>
-<summary><b>Spotify device targeting: playback 404'd with a device sitting right there</b></summary>
-
-<br>
-
-Spotify plays nothing itself. It forwards commands to a **device**. Without a `device_id` it targets "the currently active device", and an open but idle client is **available but not active**. Playback returned `404` while a perfectly good device sat idle.
-
-The fix resolves a concrete device up front, which routes the audio *and* wakes an idle client, preferring one already playing so FocusLab **controls** your phone rather than hijacking it.
-
-</details>
-
-<details>
-<summary><b>The browser as a device: three things had to line up at once</b></summary>
-
-<br>
-
-1. A short lived token endpoint for the browser. The **refresh token never leaves the server**.
-2. A `device_id` override on every playback route.
-3. A `Permissions-Policy` naming `sdk.scdn.co` for `encrypted-media` and `autoplay`.
-
-Miss #3 and protected audio is **silently blocked** inside the SDK's cross origin iframe. No error, no console warning, nothing.
-
-</details>
-
-<details>
-<summary><b>Observation over documentation: every playback command was 500'ing</b></summary>
-
-<br>
-
-Spotify's docs say playback commands return `204 No Content`. They actually return **`200` with a bare non JSON command id and no `content-type` header**, so `.json()` raised and every command 500'd.
-
-Success parsing now keys off the response header, not the spec.
-
-</details>
-
-<details>
-<summary><b>The OAuth state cookie that broke on a hostname</b></summary>
-
-<br>
-
-CSRF `state` lived in an `httponly` cookie. Logins started at `localhost:8000` silently failed, because the redirect URI is `127.0.0.1:8000` and **cookies are host scoped**. The cookie never came back and the flow died at `?spotify=error`.
-
-State is now **server side** with a 10 minute TTL, same timing safe `compare_digest`, plus two properties the cookie never had:
-
-- **Replay protection.** State is consumed on first use. One state, one callback.
-- **No browser dependency.** A packaged desktop build using a custom scheme redirect has no cookie jar at all.
-
-</details>
-
-<details>
-<summary><b>An agent that was confidently a year wrong</b></summary>
-
-<br>
-
-Asked for "my worst grade this semester", the agent scanned every term and returned `76.71 in 2025S MA 125`. A global minimum from the wrong year.
-
-The tools were fine. The model had no concept of *now*. Injecting the current date into the system prompt fixed it: `82.37 in MA 232`, correct term.
-
-Two more failures followed the same shape. A missing capability (no file tools) and an unresolvable course name (only the section code was returned). Neither was solved by adding tools, but by fixing what the tools *told* the agent.
-
-</details>
-
-<details>
-<summary><b>One import that killed the entire API</b></summary>
-
-<br>
-
-`apis/canvas/core.py` built its `httpx` client at import time, reading `os.environ['CANVAS_URL']`. Mounting the Canvas router meant `main.py` imported that module, so on a container without Canvas credentials the app raised `KeyError` before uvicorn ever started. Every route died, including Spotify.
-
-The client is now built on first use. Missing Canvas config returns `503` from `/canvas/tasks` and nothing else notices.
-
-</details>
+**Stack** · Next.js 16 · React 19 · TypeScript 5 · Tailwind 4 · FastAPI · SQLModel · SQLite · httpx · MCP (FastMCP) · LangGraph · Claude Haiku 4.5 · Docker Compose
 
 ---
 
@@ -185,73 +43,103 @@ The client is now built on first use. Missing Canvas config returns `503` from `
 
 ```mermaid
 flowchart TD
-    B["Browser · Next.js 16<br/>5 workspaces · Web Playback SDK"]
-    A["FastAPI · :8000<br/>apis/ · OAuth · queue logic"]
-    D["SQLite<br/>queues · tracks · tokens · keys"]
-    S["Spotify Web API"]
-    C["Canvas LMS API"]
-    M["FocusLab_MCP<br/>9 tools · stdio"]
-    G["LangGraph agent<br/>Claude Haiku 4.5"]
+    subgraph BROWSER ["🖥️ Browser · Next.js 16 · :3000"]
+        UI["5 workspaces<br/>Web Playback SDK"]
+        PANEL["FocusAI panel<br/>Markdown · download chips"]
+    end
 
-    B -->|"REST · JSON"| A
-    A -->|"SQLModel"| D
-    A -->|"httpx · Bearer"| S
-    A -->|"apis/canvas/core.py"| C
-    M -->|"same core.py, loaded by path"| C
-    G -->|"MCP"| M
-    S -.->|"streams audio to the tab"| B
+    subgraph API ["⚙️ Container · FastAPI · :8000"]
+        ROUTES["apis/ · 28 endpoints<br/>OAuth · queues · notes"]
+        CORE["apis/canvas/core.py<br/>framework free"]
+    end
+
+    subgraph AGENT ["🤖 Container · FocusAI · :8001"]
+        HTTP["http_MCP.py<br/>POST /chat · stateless"]
+        LOOP["client_MCP.py<br/>LangGraph ReAct · Claude"]
+        MCP["FocusLab_MCP<br/>11 tools"]
+    end
+
+    DB[("SQLite<br/>queues · tracks<br/>tokens · notes")]
+    SPOT["Spotify Web API"]
+    CANVAS["Canvas LMS API"]
+
+    UI -->|"REST · JSON"| ROUTES
+    PANEL -->|"full transcript"| HTTP
+    HTTP --> LOOP
+    LOOP -->|"MCP · stdio"| MCP
+
+    ROUTES --> DB
+    ROUTES -->|"httpx · Bearer"| SPOT
+    ROUTES --> CORE
+    CORE --> CANVAS
+
+    MCP -->|"same core.py, loaded by path"| CANVAS
+    MCP -->|"GET /notes"| ROUTES
+
+    SPOT -.->|"streams audio to the tab"| UI
 ```
 
 **The backend never touches audio.** It authenticates, persists, and translates intent into commands. The browser is both the UI and the output device.
 
-Spotify access is layered so each level owns one concern, which is why the device fix touched a single function:
+**One Canvas implementation, two consumers.** `core.py` is framework free, so FastAPI imports it and the MCP server loads it by file path — without installing a web framework on the agent side.
 
-```
-route → player_command → spotify_api_request → httpx
-        picks + heals     token + error mapping
-```
-
-Dependency direction is one way, enforced by structure:
-
-```
-router.py  ←  OAuth_Logic.py  ←  core.py  ←  routes/
-(no deps)     flow + tokens      Web API     handlers
-```
+**The agent's arrow into notes points at the REST API, not the database.** The agent is a peer of the browser, not a privileged insider, and reaches user data through the same door.
 
 ---
 
-## Tech stack
+## What broke, and what was actually true
 
-| Layer | Technologies |
+Every row cost real debugging time. None were solved by guessing.
+
+| Symptom | What was actually true |
 |---|---|
-| **Frontend** | Next.js 16 · React 19 · TypeScript 5 · Tailwind CSS 4 · Spotify Web Playback SDK |
-| **Backend** | FastAPI · SQLModel · SQLite · httpx · Spotify Web API · Canvas LMS API |
-| **Agent** | MCP (FastMCP) · LangGraph · LangChain · Claude Haiku 4.5 |
-| **Infra** | Docker Compose |
+| Playback `404`s with a device sitting right there | Spotify forwards commands to a **device**, and an open but idle client is *available, not active*. Resolving a device up front routes the audio **and** wakes the client. |
+| Protected audio silently blocked. No error, no warning | The Web Playback SDK runs in a cross origin iframe. `Permissions-Policy` has to name `sdk.scdn.co` for `encrypted-media` and `autoplay`. |
+| Every playback command `500`s | Docs promise `204 No Content`. Spotify returns **`200` with a bare non JSON command id and no `content-type`**, so `.json()` raised. Success now keys off the header. |
+| OAuth dies at `?spotify=error` from `localhost` | Cookies are host scoped and the redirect URI is `127.0.0.1`. State moved **server side**: 10 min TTL, timing safe, single use — and no cookie jar needed for a future desktop build. |
+| Agent confidently reports the wrong year's grade | The tools were fine; the model had no concept of *now*. Injecting the date turned `76.71 in 2025S MA 125` into `82.37 in MA 232`. |
+| Mounting the Canvas router kills **every** route | `core.py` built its `httpx` client at import from `os.environ`, so a container without Canvas credentials `KeyError`'d before uvicorn started. Built on first use now; missing config `503`s one endpoint and nothing else notices. |
+| Notes tools work in every test, refuse connections through the agent | **MCP's stdio transport does not inherit the environment** — it hands the child `PATH` and little else. Canvas survived only by accident, because `core.py` loads its own `.env`. |
+| Canvas: `name` is the course name | `name` is the section code (`2026S CS 334-A`); `course_code` holds the readable title (`Theory of Computation`). Inverted. |
+| Canvas: lecture slides are files | They are `<a href>` links inside a Page's HTML body. Module items report `file: null`, so the lectures look empty. |
 
 ---
 
-## Getting started
+## What it demonstrates
+
+| Area | Evidence |
+|---|---|
+| **OAuth 2.0 from scratch** | Authorization Code flow, CSRF `state` with `compare_digest`, single use replay protection, 60s early refresh. No auth library. |
+| **Protocol design (MCP)** | Own FastMCP server, 11 tools, stdio transport. Tool descriptions are the agent's only guidance channel, so every misleading default is documented in them. |
+| **Tool contract design** | `read_notes` is unreachable without `list_notes` — ids exist nowhere but a tool result. Enforced in the prompt *and* both docstrings, because the description is what the model reads at call time. |
+| **Zero duplication across surfaces** | One `core.py` serves FastAPI routes and MCP tools. The Spotify device fix touched *one function*, not twelve routes, because the layers were drawn correctly. |
+| **Untrusted model output in the DOM** | Replies render as Markdown with raw HTML disabled. File links become download chips; everything else opens `noopener`. |
+| **Handling hostile input** | Note bodies are `contentEditable` HTML — a pasted screenshot is a base64 data URI. Flattened to text before it reaches the model, images reduced to an `[image]` marker. |
+
+---
+
+## Run it
 
 ```bash
 git clone https://github.com/MatiasPF1/FocusLab.git
 cd FocusLab
 
-cp backend/.env.example backend/.env      # Spotify credentials, optional Canvas token
+cp backend/.env.example backend/.env          # Spotify credentials
+cp Client_MCP/.env.example Client_MCP/.env    # Canvas token, Anthropic key
 docker compose up
 ```
 
-Frontend on `:3000`, API and interactive docs on `:8000/docs`.
+Frontend on `:3000`, API docs on `:8000/docs`, FocusAI on `:8001`. Three services, one command.
 
-Spotify requires an app at [developer.spotify.com](https://developer.spotify.com/dashboard) with redirect URI `http://127.0.0.1:8000/spotify/callback`. Spotify banned `localhost` redirects on 2025-11-27, so the loopback IP is required.
+Spotify needs an app at [developer.spotify.com](https://developer.spotify.com/dashboard) with redirect URI `http://127.0.0.1:8000/spotify/callback` — they banned `localhost` redirects on 2025-11-27, so the loopback IP is required.
 
-To run the agent:
+The agent also answers on the command line, which is the faster loop when working on its prompt or tools:
 
 ```bash
-cp Client_MCP/.env.example Client_MCP/.env    # Canvas token, Anthropic key
-pip install -r Client_MCP/requirements.txt
 python Client_MCP/client_MCP.py "what is due this week?"
 ```
+
+Request path: `browser → http_MCP.py → client_MCP.py → FocusLab_MCP/server.py`, the last hop over stdio. With the service down, the panel still opens and says so rather than failing silently.
 
 ---
 
@@ -260,16 +148,22 @@ python Client_MCP/client_MCP.py "what is due this week?"
 Single user, localhost only, by design.
 
 - **Refresh tokens never reach the browser.** The frontend gets short lived access tokens from a dedicated endpoint.
-- **CSRF state is server side**, timing safe, single use, 10 minute TTL.
-- **CORS is an allowlist**, and the threat it stops is another site reading responses. It is not authentication.
-- **Agent file writes are sandboxed** to `~/Downloads`, folder and filename both sanitized against traversal.
+- **CSRF state is server side**, timing safe, single use, 10 minute TTL. CORS is an allowlist, and it is not authentication.
+- **Agent file writes are sandboxed** to `~/Downloads`, folder and filename both sanitized against traversal. Under Docker that path is inside a container, so the panel hands files over as Canvas links instead.
 - **Pre signed Canvas URLs redirect across three hosts**, so downloads carry no `Authorization` header.
 
 ---
 
-## Roadmap
+## What this unlocks next
 
-To-Do and Notebook UIs on their finished APIs. Agent backed AI Study workspace on the existing MCP layer. Electron packaging with PKCE and a loopback redirect.
+The expensive part is built. Each of these is a tool on an MCP server that already exists, or a UI on an API that is already finished.
+
+| Next | Why it is close |
+|---|---|
+| **Slides that answer questions** | Claude reads PDFs natively — text *and* rendered pages, so the automata diagrams count. A deck uploads once and is cited by page number forever after. |
+| **A semester that fits in context** | One pass per lecture turns a 40 slide deck into dense notes. Twenty five of those is ~50k tokens: a whole course in one prompt, no vector database. |
+| **Semantic links between notes and lectures** | Embed both sides and "related lectures" is one matrix multiply. 200 notes against 25 lectures is 5,000 comparisons — absurd as LLM calls, instant as vectors. |
+| **To-Do, Notebook, Calendar UIs** | Their APIs are done and tested. Frontend work on a finished contract. |
 
 ---
 

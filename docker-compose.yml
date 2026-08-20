@@ -8,12 +8,23 @@ services:
 
     volumes:
       - ./frontend:/app
+      # Anonymous volumes, so the container keeps the node_modules npm ci
+      # installed in the image instead of having the host's bind mount hide
+      # them. Compose carries an anonymous volume over when it recreates a
+      # container, so after adding a dependency plain --build is not enough:
+      #   docker compose up --build --renew-anon-volumes frontend
+      # Without the flag the container runs on the old node_modules and the
+      # new import fails to resolve.
       - /app/node_modules
       - /app/.next
 
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8000
       INTERNAL_API_URL: http://backend:8000
+      # Where the chat panel posts. NEXT_PUBLIC_ vars are read in the
+      # browser, so this is the published host port of the agent service
+      # below, not its compose hostname.
+      NEXT_PUBLIC_AGENT_URL: http://localhost:8001
       # Native filesystem change events don't cross the Windows -> Docker bind
       # mount, so Next.js never sees edits without this: it has to poll the
       # files instead. Without it, every change needs a manual container
@@ -27,6 +38,7 @@ services:
 
     depends_on:
       - backend
+      - agent
 
     # --webpack: Turbopack (the default) doesn't support the polling env vars
     # above, so it can never see edits made from Windows through this mount.
@@ -45,6 +57,40 @@ services:
       - backend_data:/app/data
 
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+
+  # The FocusAI agent behind the chat panel. Separate from backend because its
+  # LLM dependencies and its Anthropic key live in Client_MCP/, and because it
+  # spawns FocusLab_MCP/server.py as a child process over stdio.
+  agent:
+    build:
+      # Root context: the image has to hold Client_MCP, FocusLab_MCP and the
+      # backend's Canvas package in their original relative positions, since
+      # both hops resolve each other by path.
+      context: .
+      dockerfile: Client_MCP/Dockerfile
+
+    ports:
+      - "8001:8001"
+
+    environment:
+      # The notes tools read the backend's /notes API. Inside the compose
+      # network that is the service name, not localhost - localhost in this
+      # container is this container.
+      FOCUSLAB_API_URL: http://backend:8000
+
+    depends_on:
+      - backend
+
+    volumes:
+      # Mirrors the image layout so --reload sees edits. Client_MCP carries
+      # the .env holding ANTHROPIC_KEY and the Canvas token, which the MCP
+      # server inherits when the agent spawns it.
+      - ./Client_MCP:/app/Client_MCP
+      - ./FocusLab_MCP:/app/FocusLab_MCP
+      - ./backend/apis/canvas:/app/backend/apis/canvas
+
+    command: uvicorn http_MCP:app --host 0.0.0.0 --port 8001 --reload
 
 volumes:
   backend_data:
