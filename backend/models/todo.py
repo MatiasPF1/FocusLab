@@ -34,6 +34,10 @@ class Note(SQLModel, table=True):
     title: str = ""
     # Rich-text HTML from the To-Do note editor, unbounded so long notes are never truncated.
     content: str = Field(default="", sa_column=Column(Text))
+    # Which cover art the Notebook shows, as an id from the frontend's cover
+    # catalogue ("cover1") rather than a path, so moving or renaming the image
+    # files never invalidates what is stored here. Empty means no cover.
+    cover: str = ""
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -55,6 +59,7 @@ class NoteCreate(SQLModel):
     '''
     title: str = ""
     content: str = ""
+    cover: str = ""
 
 
 class NoteUpdate(SQLModel):
@@ -65,11 +70,13 @@ class NoteUpdate(SQLModel):
     '''
     title: str | None = None
     content: str | None = None
+    cover: str | None = None
 
 
 class NoteRead(SQLModel):
     id: int
     title: str
     content: str
+    cover: str
     created_at: datetime
     updated_at: datetime

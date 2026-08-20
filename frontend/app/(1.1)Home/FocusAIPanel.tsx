@@ -27,7 +27,7 @@ type Message = {
 const GREETING: Message = {
   id: 0,
   role: "agent",
-  text: "Hey — I'm FocusAI. Ask me about your Canvas courses, your grades, or what you still owe.",
+  text: "Hey I'm FocusAI. Ask me about your Canvas courses, your grades, or what you still owe.",
 };
 
 // Shown under an untouched transcript as one-tap starting points.
@@ -94,33 +94,42 @@ export default function FocusAIPanel({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed bottom-4 left-60 z-50 flex w-[24rem] flex-col overflow-hidden rounded-2xl border border-ob-line/60 bg-ob-surface shadow-2xl shadow-black/40 h-[min(36rem,calc(100vh-2rem))]">
       {/* Header */}
-      <header className="flex items-center gap-3 border-b border-ob-line/60 px-4 py-3">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-ob-raised text-ob-mist">
-          <Bot size={16} />
-        </span>
+      <header className="relative flex items-center gap-3 bg-linear-to-b from-white/[0.035] to-transparent px-4 py-3">
+        {/* A hairline that fades out at both ends rather than butting into the
+            panel's rounded corners, which is where a full-width rule looks cut off. */}
+        <span className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-linear-to-r from-transparent via-ob-line to-transparent" />
+
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-ob-mist">FocusAI</p>
-          <p className="text-xs text-ob-slate">Your study agent</p>
+          <p className="text-sm font-medium leading-tight tracking-tight text-ob-mist">FocusAI</p>
+          {/* Tracked small caps turn a throwaway line into a label */}
+          <p className="mt-1 text-[10px] uppercase leading-none tracking-[0.14em] text-ob-slate">
+            Your study agent
+          </p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setMessages([GREETING]);
-            setError(null);
-          }}
-          className="rounded-lg p-1.5 text-ob-slate transition-colors hover:bg-ob-raised hover:text-ob-mist"
-          title="New chat"
-        >
-          <Plus size={16} />
-        </button>
-        <button
-          type="button"
-          onClick={onClose}
-          className="rounded-lg p-1.5 text-ob-slate transition-colors hover:bg-ob-raised hover:text-ob-mist"
-          title="Close"
-        >
-          <X size={16} />
-        </button>
+
+        <div className="flex shrink-0 items-center gap-0.5">
+          <button
+            type="button"
+            onClick={() => {
+              setMessages([GREETING]);
+              setError(null);
+            }}
+            className="rounded-lg p-1.5 text-ob-slate transition-colors hover:bg-ob-raised hover:text-ob-mist"
+            title="New chat"
+          >
+            <Plus size={16} />
+          </button>
+          {/* Separates "start over" from "close" so the two are not one blur of icons */}
+          <span className="mx-1 h-4 w-px bg-ob-line" />
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-ob-slate transition-colors hover:bg-ob-raised hover:text-ob-mist"
+            title="Close"
+          >
+            <X size={16} />
+          </button>
+        </div>
       </header>
 
       {/* Transcript */}

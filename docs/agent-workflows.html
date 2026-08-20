@@ -1,0 +1,835 @@
+<title>FocusAI Retrieval Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<!-- IBM Plex Sans is requested one weight per link on purpose. A multi-weight
+     request returns the variable font, and Chrome's PDF exporter draws variable
+     faces as doubled, broken glyphs at every weight - which is how this page is
+     printed. Single-weight requests return static faces, which print cleanly.
+     Zilla Slab and Plex Mono have no variable version, so they are fine as-is. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@600&display=swap">
+
+<style>
+/* ============================================================
+   Tokens - light is the base set. Print forces this set back on.
+   ============================================================ */
+:root {
+  --paper:      #FCFCFB;
+  --surface:    #F4F3F0;
+  --code-bg:    #F1F0ED;
+  --ink:        #1B1A19;
+  --body:       #33312E;
+  --muted:      #75716B;
+  --rule:       #DFDCD6;
+  --rule-soft:  #ECEAE5;
+  --canvas:     #A93E2E;
+  --canvas-soft:#F4E5E1;
+  --notes:      #3F5A6B;
+  --notes-soft: #E5EBEF;
+
+  --measure: 46rem;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --sans: "IBM Plex Sans", -apple-system, "Segoe UI", system-ui, sans-serif;
+  --slab: "Zilla Slab", "IBM Plex Serif", Georgia, serif;
+}
+
+/* Dark for the un-stamped default (system) state, unless light was chosen */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper:      #191919;
+    --surface:    #202020;
+    --code-bg:    #232323;
+    --ink:        #EDEDED;
+    --body:       #D4D4D4;
+    --muted:      #9B9B9B;
+    --rule:       #373737;
+    --rule-soft:  #2A2A2A;
+    --canvas:     #E08A76;
+    --canvas-soft:#33211D;
+    --notes:      #8FB0C6;
+    --notes-soft: #1C252B;
+  }
+}
+/* and again for an explicit dark toggle */
+:root[data-theme="dark"] {
+  --paper:      #191919;
+  --surface:    #202020;
+  --code-bg:    #232323;
+  --ink:        #EDEDED;
+  --body:       #D4D4D4;
+  --muted:      #9B9B9B;
+  --rule:       #373737;
+  --rule-soft:  #2A2A2A;
+  --canvas:     #E08A76;
+  --canvas-soft:#33211D;
+  --notes:      #8FB0C6;
+  --notes-soft: #1C252B;
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
+body {
+  background: var(--paper);
+  color: var(--body);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 4.5rem 1.75rem 6rem;
+}
+
+h1, h2, h3, h4 { font-family: var(--slab); color: var(--ink); text-wrap: balance; line-height: 1.2; }
+p { margin: 0; }
+strong { font-weight: 600; color: var(--ink); }
+em { font-style: italic; }
+a { color: var(--canvas); }
+
+/* ---- Masthead ---------------------------------------------- */
+.masthead { display: flex; flex-direction: column; gap: 1.1rem; padding-bottom: 1.75rem; border-bottom: 2px solid var(--ink); }
+.eyebrow {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.13em;
+  text-transform: uppercase; color: var(--muted);
+}
+h1 { font-size: 2.9rem; font-weight: 700; letter-spacing: -0.015em; margin: 0; }
+.standfirst { font-size: 1.075rem; color: var(--muted); max-width: 34rem; }
+.meta {
+  display: flex; flex-wrap: wrap; gap: 0.4rem 1.5rem;
+  font-family: var(--mono); font-size: 0.72rem; color: var(--muted);
+  padding-top: 0.3rem;
+}
+.meta span { white-space: nowrap; }
+
+/* ---- Sections ---------------------------------------------- */
+.section { margin-top: 3.5rem; display: flex; flex-direction: column; gap: 1.35rem; }
+.section-head { display: flex; flex-direction: column; gap: 0.45rem; }
+.section-num {
+  font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.13em;
+  text-transform: uppercase; color: var(--canvas);
+}
+.section.notes-world .section-num { color: var(--notes); }
+h2 { font-size: 1.85rem; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
+h3 { font-size: 1.12rem; font-weight: 600; margin: 1.5rem 0 0; }
+h4 { font-size: 0.95rem; font-weight: 600; margin: 0; }
+.section > p { max-width: 40rem; }
+
+/* ---- Figures ------------------------------------------------ */
+figure { margin: 0.75rem 0; display: flex; flex-direction: column; gap: 0.7rem; }
+.fig-frame {
+  border: 1px solid var(--rule); border-radius: 3px; background: var(--surface);
+  padding: 1.1rem 0.9rem; overflow-x: auto;
+}
+.fig-frame svg { display: block; width: 100%; min-width: 480px; height: auto; color: var(--ink); }
+/* The diagrams carry their accent as a literal hex on the presentation
+   attribute, which would stay a dark oxide red on the dark ground. CSS beats
+   a presentation attribute, so re-point both accents at the theme tokens and
+   let every mark - strokes, fills, arrowhead markers - follow light, dark and
+   print without touching the markup. */
+.fig-frame [stroke="#A93E2E"] { stroke: var(--canvas); }
+.fig-frame [fill="#A93E2E"]   { fill: var(--canvas); }
+.fig-frame [stroke="#3F5A6B"] { stroke: var(--notes); }
+.fig-frame [fill="#3F5A6B"]   { fill: var(--notes); }
+figcaption { font-size: 0.83rem; color: var(--muted); line-height: 1.5; }
+figcaption b { color: var(--ink); font-weight: 600; }
+
+/* ---- Depth rail (the Canvas tree, level by level) ----------- */
+.levels { display: flex; flex-direction: column; gap: 0; margin-top: 0.5rem; }
+.level {
+  display: grid; grid-template-columns: 3.6rem 1fr; gap: 1.1rem;
+  padding: 1.15rem 0; border-top: 1px solid var(--rule-soft);
+}
+.level:last-child { border-bottom: 1px solid var(--rule-soft); }
+.level-tag {
+  font-family: var(--mono); font-size: 0.72rem; font-weight: 500;
+  color: var(--canvas); letter-spacing: 0.04em; padding-top: 0.15rem;
+}
+.notes-world .level-tag { color: var(--notes); }
+.level-body { display: flex; flex-direction: column; gap: 0.5rem; }
+.level-body p { font-size: 0.92rem; }
+
+/* ---- Tool tables -------------------------------------------- */
+.table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 3px; }
+table { border-collapse: collapse; width: 100%; font-size: 0.845rem; min-width: 34rem; }
+thead th {
+  text-align: left; font-family: var(--mono); font-weight: 500;
+  font-size: 0.68rem; letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--muted); background: var(--surface);
+  padding: 0.6rem 0.85rem; border-bottom: 1px solid var(--rule);
+}
+tbody td { padding: 0.7rem 0.85rem; border-bottom: 1px solid var(--rule-soft); vertical-align: top; line-height: 1.5; }
+tbody tr:last-child td { border-bottom: 0; }
+td.tool { white-space: nowrap; }
+code, .k {
+  font-family: var(--mono); font-size: 0.86em;
+  background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 2px;
+  color: var(--ink);
+}
+td code, th code { background: none; padding: 0; }
+.fields { font-family: var(--mono); font-size: 0.79rem; color: var(--body); line-height: 1.65; }
+.opt { color: var(--muted); font-style: italic; font-family: var(--sans); font-size: 0.78rem; }
+
+/* ---- Call traces -------------------------------------------- */
+.trace {
+  border: 1px solid var(--rule); border-left: 3px solid var(--canvas); border-radius: 3px;
+  background: var(--surface); padding: 1rem 1.1rem;
+  display: flex; flex-direction: column; gap: 0.55rem;
+}
+.notes-world .trace { border-left-color: var(--notes); }
+.trace .ask { font-family: var(--slab); font-size: 1rem; font-weight: 500; color: var(--ink); }
+.trace ol { margin: 0; padding-left: 1.15rem; display: flex; flex-direction: column; gap: 0.3rem; }
+.trace li { font-size: 0.855rem; }
+.trace li::marker { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); }
+.trace .out {
+  font-size: 0.82rem; color: var(--muted); border-top: 1px dashed var(--rule);
+  padding-top: 0.5rem; margin-top: 0.15rem;
+}
+.trace-grid { display: flex; flex-direction: column; gap: 0.85rem; }
+
+/* ---- Rule callouts ------------------------------------------ */
+.rules { display: flex; flex-direction: column; gap: 0; }
+.rule-row {
+  display: flex; flex-direction: column; gap: 0.3rem;
+  padding: 0.95rem 0; border-top: 1px solid var(--rule-soft);
+}
+.rule-row:last-child { border-bottom: 1px solid var(--rule-soft); }
+.rule-row p { font-size: 0.885rem; color: var(--muted); }
+
+/* ---- Limits ------------------------------------------------- */
+.limits { display: flex; flex-direction: column; gap: 0; }
+.limit {
+  display: grid; grid-template-columns: 1.4rem 1fr; gap: 0.85rem; align-items: start;
+  padding: 0.8rem 0; border-top: 1px solid var(--rule-soft);
+}
+.limit:last-child { border-bottom: 1px solid var(--rule-soft); }
+.limit .x { font-family: var(--mono); color: var(--canvas); font-size: 0.9rem; line-height: 1.55; }
+.limit p { font-size: 0.89rem; }
+
+/* ---- Two-world summary card --------------------------------- */
+.worlds { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1rem; margin-top: 0.4rem; }
+.world { border: 1px solid var(--rule); border-radius: 3px; padding: 1rem 1.1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.world.c { background: var(--canvas-soft); border-color: var(--canvas); }
+.world.n { background: var(--notes-soft); border-color: var(--notes); }
+.world h4 { font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.11em; text-transform: uppercase; }
+.world.c h4 { color: var(--canvas); }
+.world.n h4 { color: var(--notes); }
+.world .big { font-family: var(--slab); font-size: 1.15rem; color: var(--ink); line-height: 1.3; }
+.world p { font-size: 0.85rem; color: var(--body); }
+
+footer {
+  margin-top: 4rem; padding-top: 1.25rem; border-top: 1px solid var(--rule);
+  font-family: var(--mono); font-size: 0.72rem; color: var(--muted);
+  display: flex; flex-wrap: wrap; gap: 0.3rem 1.25rem;
+}
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* ============================================================
+   Print - the PDF lane. Force the light set; keep figures whole.
+   ============================================================ */
+@page { size: A4; margin: 16mm 15mm 18mm; }
+@media print {
+  :root {
+    --paper: #FFFFFF; --surface: #F5F4F1; --code-bg: #F1F0ED;
+    --ink: #141312; --body: #2B2A27; --muted: #6B6862;
+    --rule: #D6D3CD; --rule-soft: #E8E5E0;
+    --canvas: #97372A; --canvas-soft: #F5E7E3;
+    --notes: #37505F; --notes-soft: #E7EDF1;
+  }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* antialiased thins the strokes on paper; let the print rasteriser decide */
+  body { font-size: 10.2pt; line-height: 1.55; background: #FFFFFF; -webkit-font-smoothing: auto; }
+  .page { max-width: none; padding: 0; }
+  h1 { font-size: 30pt; }
+  h2 { font-size: 16pt; }
+  h3 { font-size: 11.5pt; }
+  .section { break-before: page; margin-top: 0; }
+  .section:first-of-type { break-before: avoid; margin-top: 2.2rem; }
+  h2, h3, h4 { break-after: avoid; }
+  figure, .trace, .world, .fig-frame, .table-wrap { break-inside: avoid; }
+  tr, .level, .rule-row, .limit { break-inside: avoid; }
+  .fig-frame svg { min-width: 0; }
+  .table-wrap, .fig-frame { overflow: visible; }
+  footer { break-inside: avoid; }
+}
+</style>
+
+<div class="page">
+
+<!-- ============================ MASTHEAD ============================ -->
+<header class="masthead">
+  <div class="eyebrow">FocusLab &middot; FocusAI agent &middot; retrieval reference</div>
+  <h1>FocusAI Retrieval Map</h1>
+  <p class="standfirst">Everything the agent can reach across Canvas and your notes, the order it has to reach it in, and the exact fields that come back.</p>
+  <div class="meta">
+    <span>11 MCP tools</span>
+    <span>2 data worlds</span>
+    <span>Claude Haiku 4.5 &middot; LangGraph ReAct</span>
+    <span>read-only, except download_files</span>
+  </div>
+</header>
+
+<!-- ============================ 0 - SHAPE ============================ -->
+<section class="section">
+  <div class="section-head">
+    <div class="section-num">Overview</div>
+    <h2>Two worlds, reached through two different doors</h2>
+  </div>
+
+  <p>The agent serves one chat panel but pulls from two unrelated stores. Canvas is somebody else's system, deep and hierarchical, reached with a token. Notes are the user's own writing, flat and shallow, reached over the same REST API the browser uses. Every workflow in this document is one or the other; nothing joins them except the answer the agent writes at the end.</p>
+
+  <div class="worlds">
+    <div class="world c">
+      <h4>World A &middot; Canvas LMS</h4>
+      <div class="big">9 tools, 4 levels deep</div>
+      <p>A tree. Nothing below the top level is reachable without first resolving a <code>course_id</code>, and file bytes are three hops past that.</p>
+    </div>
+    <div class="world n">
+      <h4>World B &middot; Your notes</h4>
+      <div class="big">2 tools, 1 step apart</div>
+      <p>A list and a reader. No tree, no search &mdash; the ids exist in exactly one place, and that place has to be visited first.</p>
+    </div>
+  </div>
+
+  <figure>
+    <div class="fig-frame">
+      <svg viewBox="0 0 920 330" role="img" aria-label="Request path: the browser panel posts the full transcript to the agent service, which runs a LangGraph ReAct loop and drives the MCP server over stdio; the MCP server reaches Canvas through core.py loaded by file path, and reaches notes through the backend's REST API.">
+        <defs>
+          <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"></path>
+          </marker>
+          <marker id="arR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#A93E2E"></path>
+          </marker>
+          <marker id="arB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#3F5A6B"></path>
+          </marker>
+        </defs>
+
+        <g fill="none" stroke="currentColor" stroke-width="1.25">
+          <rect x="14" y="126" width="150" height="64" rx="3"></rect>
+          <rect x="216" y="126" width="150" height="64" rx="3"></rect>
+          <rect x="418" y="126" width="158" height="64" rx="3"></rect>
+          <rect x="628" y="126" width="130" height="64" rx="3"></rect>
+        </g>
+
+        <g font-family="IBM Plex Sans, sans-serif" fill="currentColor">
+          <text x="89" y="152" font-size="13" font-weight="600" text-anchor="middle">Chat panel</text>
+          <text x="89" y="171" font-size="11" opacity="0.62" text-anchor="middle">FocusAIPanel &middot; :3000</text>
+          <text x="291" y="152" font-size="13" font-weight="600" text-anchor="middle">http_MCP.py</text>
+          <text x="291" y="171" font-size="11" opacity="0.62" text-anchor="middle">:8001 &middot; stateless</text>
+          <text x="497" y="152" font-size="13" font-weight="600" text-anchor="middle">client_MCP.py</text>
+          <text x="497" y="171" font-size="11" opacity="0.62" text-anchor="middle">ReAct loop &middot; Haiku 4.5</text>
+          <text x="693" y="152" font-size="13" font-weight="600" text-anchor="middle">server.py</text>
+          <text x="693" y="171" font-size="11" opacity="0.62" text-anchor="middle">11 tools</text>
+        </g>
+
+        <g stroke="currentColor" stroke-width="1.25" marker-end="url(#ar)">
+          <line x1="164" y1="158" x2="208" y2="158"></line>
+          <line x1="366" y1="158" x2="410" y2="158"></line>
+          <line x1="576" y1="158" x2="620" y2="158"></line>
+        </g>
+        <g font-family="IBM Plex Mono, monospace" font-size="10" fill="currentColor" opacity="0.7" text-anchor="middle">
+          <text x="186" y="147">POST</text>
+          <text x="186" y="178">/chat</text>
+          <text x="388" y="147">full</text>
+          <text x="388" y="178">history</text>
+          <text x="598" y="147">MCP</text>
+          <text x="598" y="178">stdio</text>
+        </g>
+
+        <path d="M 758 146 C 790 146 790 66 812 66" stroke="#A93E2E" stroke-width="1.4" fill="none" marker-end="url(#arR)"></path>
+        <rect x="812" y="40" width="96" height="52" rx="3" fill="none" stroke="#A93E2E" stroke-width="1.4"></rect>
+        <text x="860" y="62" font-size="12" font-weight="600" fill="#A93E2E" text-anchor="middle" font-family="IBM Plex Sans, sans-serif">Canvas</text>
+        <text x="860" y="79" font-size="10" fill="#A93E2E" opacity="0.85" text-anchor="middle" font-family="IBM Plex Sans, sans-serif">LMS API</text>
+        <text x="784" y="104" font-size="10" fill="#A93E2E" text-anchor="middle" font-family="IBM Plex Mono, monospace">core.py</text>
+        <text x="784" y="117" font-size="10" fill="#A93E2E" text-anchor="middle" font-family="IBM Plex Mono, monospace">by path</text>
+
+        <path d="M 758 170 C 790 170 790 250 812 250" stroke="#3F5A6B" stroke-width="1.4" fill="none" marker-end="url(#arB)"></path>
+        <rect x="812" y="224" width="96" height="52" rx="3" fill="none" stroke="#3F5A6B" stroke-width="1.4"></rect>
+        <text x="860" y="246" font-size="12" font-weight="600" fill="#3F5A6B" text-anchor="middle" font-family="IBM Plex Sans, sans-serif">Backend</text>
+        <text x="860" y="263" font-size="10" fill="#3F5A6B" opacity="0.85" text-anchor="middle" font-family="IBM Plex Sans, sans-serif">:8000 /notes</text>
+        <text x="784" y="203" font-size="10" fill="#3F5A6B" text-anchor="middle" font-family="IBM Plex Mono, monospace">notes.py</text>
+        <text x="784" y="216" font-size="10" fill="#3F5A6B" text-anchor="middle" font-family="IBM Plex Mono, monospace">over HTTP</text>
+
+        <path d="M 89 190 C 89 300 700 306 812 268" stroke="currentColor" stroke-width="1" stroke-dasharray="4 4" fill="none" opacity="0.4" marker-end="url(#ar)"></path>
+        <text x="410" y="320" font-size="10" fill="currentColor" opacity="0.55" text-anchor="middle" font-family="IBM Plex Mono, monospace">the browser uses that same /notes door</text>
+      </svg>
+    </div>
+    <figcaption><b>The agent is a peer of the browser, not a privileged insider.</b> Canvas is reached by loading <code>backend/apis/canvas/core.py</code> off disk by file path &mdash; one implementation, no web framework on the agent side. Notes are reached over HTTP through the identical <code>/notes</code> endpoints the To-Do page calls. The chat service keeps no session: the panel owns the transcript and resends all of it with every message.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================ 1 - CANVAS HIERARCHY ============================ -->
+<section class="section">
+  <div class="section-head">
+    <div class="section-num">World A &middot; 01</div>
+    <h2>The Canvas hierarchy</h2>
+  </div>
+
+  <p>Canvas has one key that opens everything: the <strong>course id</strong>. It is not guessable, it is never in the user's question, and no tool below the top level works without it. That single fact sets the shape of every Canvas workflow &mdash; the first call is always a lookup, and the real work starts on the second.</p>
+
+  <figure>
+    <div class="fig-frame">
+      <svg viewBox="0 0 920 560" role="img" aria-label="The Canvas tool tree: list_courses yields a course id, which opens two independent axes - a structure axis running through modules and assignments down to file ids and finally to download_files, and a grades axis running through get_grades to per-assignment scores.">
+        <defs>
+          <marker id="t-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"></path>
+          </marker>
+          <marker id="t-arR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#A93E2E"></path>
+          </marker>
+        </defs>
+
+        <g font-family="IBM Plex Mono, monospace" font-size="10" fill="currentColor" opacity="0.45">
+          <text x="8" y="44">L0</text>
+          <text x="8" y="166">L1</text>
+          <text x="8" y="286">L2</text>
+          <text x="8" y="406">L3</text>
+          <text x="8" y="508">L4</text>
+        </g>
+        <g stroke="currentColor" stroke-width="1" opacity="0.12">
+          <line x1="46" y1="72" x2="912" y2="72"></line>
+          <line x1="46" y1="192" x2="912" y2="192"></line>
+          <line x1="46" y1="312" x2="912" y2="312"></line>
+          <line x1="46" y1="432" x2="912" y2="432"></line>
+        </g>
+
+        <g fill="none" stroke="currentColor" stroke-width="1.25">
+          <rect x="188" y="18" width="200" height="44" rx="3"></rect>
+          <rect x="620" y="18" width="200" height="44" rx="3"></rect>
+        </g>
+        <g font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor" text-anchor="middle">
+          <text x="288" y="45">list_courses(term?)</text>
+          <text x="720" y="45">get_grades(term?)</text>
+        </g>
+
+        <rect x="188" y="140" width="200" height="44" rx="3" fill="none" stroke="#A93E2E" stroke-width="1.8"></rect>
+        <text x="288" y="168" font-size="14" font-weight="600" fill="#A93E2E" text-anchor="middle" font-family="IBM Plex Mono, monospace">course_id</text>
+
+        <g stroke="currentColor" stroke-width="1.25" fill="none" marker-end="url(#t-ar)">
+          <line x1="288" y1="62" x2="288" y2="132"></line>
+          <path d="M 720 62 L 720 108 L 330 108 L 322 132"></path>
+        </g>
+        <text x="404" y="102" font-size="10" fill="currentColor" opacity="0.65" font-family="IBM Plex Mono, monospace">both hand back ids</text>
+
+        <g fill="none" stroke="currentColor" stroke-width="1.25">
+          <rect x="60" y="260" width="176" height="44" rx="3"></rect>
+          <rect x="256" y="260" width="196" height="44" rx="3"></rect>
+          <rect x="530" y="252" width="222" height="40" rx="3"></rect>
+          <rect x="530" y="316" width="222" height="40" rx="3"></rect>
+        </g>
+        <g font-family="IBM Plex Mono, monospace" font-size="11.5" fill="currentColor" text-anchor="middle">
+          <text x="148" y="287">get_modules</text>
+          <text x="354" y="287">get_assignments</text>
+          <text x="641" y="277">get_assignment_grades</text>
+          <text x="641" y="341">get_unsubmitted</text>
+        </g>
+
+        <g stroke="#A93E2E" stroke-width="1.35" fill="none" marker-end="url(#t-arR)">
+          <path d="M 250 184 L 148 224 L 148 252"></path>
+          <path d="M 326 184 L 354 224 L 354 252"></path>
+          <path d="M 388 162 L 496 162 L 496 272 L 522 272"></path>
+          <path d="M 496 272 L 496 336 L 522 336"></path>
+        </g>
+
+        <text x="112" y="222" font-size="10" fill="currentColor" opacity="0.68" font-family="IBM Plex Sans, sans-serif">by topic</text>
+        <text x="368" y="222" font-size="10" fill="currentColor" opacity="0.68" font-family="IBM Plex Sans, sans-serif">by due date</text>
+        <text x="812" y="290" font-size="10" fill="currentColor" opacity="0.55" font-family="IBM Plex Sans, sans-serif" text-anchor="middle">grade axis &mdash;</text>
+        <text x="812" y="304" font-size="10" fill="currentColor" opacity="0.55" font-family="IBM Plex Sans, sans-serif" text-anchor="middle">no files below it</text>
+
+        <g fill="none" stroke="currentColor" stroke-width="1.25">
+          <rect x="40" y="380" width="176" height="44" rx="3"></rect>
+          <rect x="236" y="380" width="200" height="44" rx="3"></rect>
+        </g>
+        <g font-family="IBM Plex Mono, monospace" font-size="11.5" fill="currentColor" text-anchor="middle">
+          <text x="128" y="407">get_page_files</text>
+          <text x="336" y="407">get_assignment_files</text>
+        </g>
+        <g stroke="#A93E2E" stroke-width="1.35" fill="none" marker-end="url(#t-arR)">
+          <path d="M 142 304 L 130 372"></path>
+          <path d="M 348 304 L 340 372"></path>
+        </g>
+        <text x="470" y="398" font-size="10" fill="#A93E2E" text-anchor="start" font-family="IBM Plex Sans, sans-serif">File items already carry a file object;</text>
+        <text x="470" y="412" font-size="10" fill="#A93E2E" text-anchor="start" font-family="IBM Plex Sans, sans-serif">Pages hide theirs in the page body</text>
+
+        <rect x="140" y="472" width="248" height="48" rx="3" fill="none" stroke="#A93E2E" stroke-width="1.8" stroke-dasharray="5 3"></rect>
+        <text x="264" y="494" font-size="12" fill="#A93E2E" text-anchor="middle" font-family="IBM Plex Mono, monospace">download_files(ids, folder)</text>
+        <text x="264" y="510" font-size="10" fill="#A93E2E" opacity="0.9" text-anchor="middle" font-family="IBM Plex Sans, sans-serif">the only tool that writes</text>
+        <g stroke="#A93E2E" stroke-width="1.35" fill="none" marker-end="url(#t-arR)">
+          <path d="M 128 424 L 128 452 L 240 452 L 246 464"></path>
+          <path d="M 336 424 L 336 452 L 288 452 L 284 464"></path>
+          <path d="M 148 304 L 30 304 L 30 452 L 118 452 L 130 464"></path>
+        </g>
+        <text x="470" y="452" font-size="10" fill="currentColor" opacity="0.6" font-family="IBM Plex Mono, monospace">file ids from any of the three</text>
+      </svg>
+    </div>
+    <figcaption><b>Two axes hang off one id, and only one of them reaches files.</b> <code>get_grades</code> is a second top-level entry &mdash; it takes a term, not a course id, and returns ids too, so a grades question can skip <code>list_courses</code> entirely. The dashed leaf is the only tool in the whole server that changes anything on disk.</figcaption>
+  </figure>
+
+  <div class="levels">
+    <div class="level">
+      <div class="level-tag">L0</div>
+      <div class="level-body">
+        <h4>Term &mdash; the only thing filterable without an id</h4>
+        <p><code>list_courses(term)</code> and <code>get_grades(term)</code> take a substring like <span class="k">"2026 Spring"</span> and are the two doors into everything else. Both include <span class="k">unpublished</span>, <span class="k">available</span> and <span class="k">completed</span> states, so next semester's courses appear here before an instructor publishes them, and a course from years ago is still reachable.</p>
+      </div>
+    </div>
+    <div class="level">
+      <div class="level-tag">L1</div>
+      <div class="level-body">
+        <h4>Course &mdash; the key, and the naming trap</h4>
+        <p>Every course carries two names, and Canvas stores them the opposite way round to what the field names imply: <code>name</code> is the section code (<span class="k">2026S CS 334-A</span>) and <code>title</code> is the readable one (<span class="k">Theory of Computation</span>). The agent matches user wording against <em>both</em>, case-insensitively, on substrings &mdash; people say the title or a fragment, almost never the code.</p>
+      </div>
+    </div>
+    <div class="level">
+      <div class="level-tag">L2</div>
+      <div class="level-body">
+        <h4>Structure &mdash; the same course, cut two ways</h4>
+        <p><code>get_modules</code> groups by topic and holds the material. <code>get_assignments</code> groups by time into <span class="k">Upcoming</span> / <span class="k">Undated</span> / <span class="k">Past</span> and describes the workload. "Where is X" goes left; "what is due" goes right. Undated is not filler &mdash; rolled-up marks like <em>Homework average</em> live there with no due date.</p>
+      </div>
+    </div>
+    <div class="level">
+      <div class="level-tag">L3</div>
+      <div class="level-body">
+        <h4>Content &mdash; where the file ids actually appear</h4>
+        <p>Module items are a <strong>flat ordered list</strong>, not a tree: nesting lives in <code>indent</code>, which is what the Canvas web page renders as indentation. An <span class="k">indent=1</span> File under an <span class="k">indent=0</span> Assignment is that assignment's attachment. Only <span class="k">File</span> items carry a <code>file</code> object; <span class="k">Page</span>, <span class="k">Assignment</span> and <span class="k">ExternalUrl</span> items have <code>file: null</code> and are reached through <code>link</code>.</p>
+      </div>
+    </div>
+    <div class="level">
+      <div class="level-tag">L4</div>
+      <div class="level-body">
+        <h4>Bytes &mdash; and why the agent usually skips this level</h4>
+        <p>Every file object already carries a <strong>pre-signed <code>url</code></strong>, so the normal answer is a Markdown link the panel renders as a clickable chip. <code>download_files</code> writes to <code>~/Downloads/&lt;folder&gt;</code> <em>on the machine running the agent</em> &mdash; under Docker that is inside a container the user cannot open. It is called only when someone explicitly asks for files saved to disk.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 2 - CANVAS TOOLS ============================ -->
+<section class="section">
+  <div class="section-head">
+    <div class="section-num">World A &middot; 02</div>
+    <h2>What each Canvas tool returns</h2>
+  </div>
+
+  <p>Nine tools, and the exact field names that come back. Anything not in these tables, the agent cannot state &mdash; its prompt forbids it from inventing a number, filename, date or grade a tool did not return.</p>
+
+  <h3>Finding and structuring</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Tool</th><th>Takes</th><th>Gives back</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="tool"><code>list_courses</code></td>
+          <td><code>term</code> <span class="opt">optional</span></td>
+          <td><span class="fields">id &middot; name &middot; title &middot; term</span><br><span class="opt">name is the section code, title is the readable one</span></td>
+        </tr>
+        <tr>
+          <td class="tool"><code>get_modules</code></td>
+          <td><code>course_id</code></td>
+          <td><span class="fields">module &middot; items[ type &middot; title &middot; indent &middot; link &middot; file ]</span><br><span class="opt">file, when present: id &middot; name &middot; type &middot; kb &middot; url</span></td>
+        </tr>
+        <tr>
+          <td class="tool"><code>get_assignments</code></td>
+          <td><code>course_id</code></td>
+          <td><span class="fields">bucket &middot; assignments[ name &middot; group &middot; due &middot; score &middot; possible &middot; state ]</span><br><span class="opt">group is the weighted category: Homework, Exams, Attendance</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Reaching files</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Tool</th><th>Takes</th><th>Gives back</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="tool"><code>get_page_files</code></td>
+          <td><code>course_id</code><br><code>page</code> <span class="opt">optional</span></td>
+          <td><span class="fields">module &middot; page &middot; files[ id &middot; name &middot; type &middot; kb &middot; url ]</span><br><span class="opt">where lecture slides live: inside Page bodies, not module items</span></td>
+        </tr>
+        <tr>
+          <td class="tool"><code>get_assignment_files</code></td>
+          <td><code>course_id</code></td>
+          <td><span class="fields">assignment &middot; files[ id &middot; name &middot; type &middot; kb &middot; url ] &middot; links[ ]</span><br><span class="opt">scraped out of assignment descriptions</span></td>
+        </tr>
+        <tr>
+          <td class="tool"><code>download_files</code></td>
+          <td><code>file_ids</code><br><code>folder</code></td>
+          <td><span class="fields">name &middot; kb &middot; path</span> &nbsp;or&nbsp; <span class="fields">id &middot; error</span><br><span class="opt">writes to disk: the only non-read tool in the server</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Grades</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Tool</th><th>Takes</th><th>Gives back</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="tool"><code>get_grades</code></td>
+          <td><code>term</code> <span class="opt">optional</span></td>
+          <td><span class="fields">id &middot; name &middot; title &middot; term &middot; score &middot; letter</span></td>
+        </tr>
+        <tr>
+          <td class="tool"><code>get_assignment_grades</code></td>
+          <td><code>course_id</code><br><code>graded_only</code></td>
+          <td><span class="fields">name &middot; score &middot; possible &middot; state &middot; due</span></td>
+        </tr>
+        <tr>
+          <td class="tool"><code>get_unsubmitted</code></td>
+          <td><code>course_id</code></td>
+          <td><span class="fields">name &middot; possible &middot; due</span><br><span class="opt">filtered by Canvas server-side</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Five things the field names do not tell you</h3>
+  <div class="rules">
+    <div class="rule-row">
+      <h4>Lecture slides are invisible to <code>get_modules</code></h4>
+      <p>A lecture shows up as a Page item with <code>file: null</code>, because its PDFs are links written into the page body rather than module items. Asked for slides, <code>get_modules</code> alone makes the whole course look like it has no files &mdash; <code>get_page_files</code> fetches each page and scrapes it.</p>
+    </div>
+    <div class="rule-row">
+      <h4>Solution keys go the other way</h4>
+      <p>They are published almost only as File items inside modules, not attached to the assignment. A solutions question needs <code>get_modules</code>, never <code>get_assignment_files</code>.</p>
+    </div>
+    <div class="rule-row">
+      <h4>One lecture usually publishes three PDFs</h4>
+      <p><span class="k">*.short.pdf</span> handout without worked solutions &middot; <span class="k">*.pdf</span> full slides with sample solutions &middot; <span class="k">*.marked.pdf</span> full slides plus notes written in class. If the user did not say which, the agent asks rather than silently returning all three.</p>
+    </div>
+    <div class="rule-row">
+      <h4>A score of <code>null</code> is not a zero</h4>
+      <p>Canvas scores are grade-to-date: ungraded work is not counted against you, so an early-semester percentage is not predictive. Likewise <em>unsubmitted</em> includes work that is not due yet &mdash; it is not a list of what you are late on.</p>
+    </div>
+    <div class="rule-row">
+      <h4>Narrow the page filter, or pay for it</h4>
+      <p><code>page</code> is a plain substring, so <span class="k">"Lecture 1"</span> also matches Lectures 10 through 19 &mdash; <span class="k">"Lecture 1:"</span> pins one. Omitting it sweeps every page in the course, roughly 30 seconds of Canvas calls.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 3 - CANVAS WORKFLOWS ============================ -->
+<section class="section">
+  <div class="section-head">
+    <div class="section-num">World A &middot; 03</div>
+    <h2>Canvas workflows, end to end</h2>
+  </div>
+  <p>Six questions the panel actually gets, and the call chain each one resolves into. Every chain starts with a name-to-id lookup, because there is no other way to get an id.</p>
+
+  <div class="trace-grid">
+
+    <div class="trace">
+      <div class="ask">"Give me the Lecture 3 slides for theory of comp"</div>
+      <ol>
+        <li><code>list_courses()</code> &mdash; match <span class="k">"theory of comp"</span> against <code>name</code> and <code>title</code> &rarr; <code>course_id</code></li>
+        <li><code>get_page_files(course_id, page="Lecture 3")</code> &rarr; module, page title, and the file objects with ids and pre-signed urls</li>
+        <li>If all three variants came back, ask which &mdash; handout, full, or marked</li>
+      </ol>
+      <div class="out">Answer: one Markdown link per file, rendered in the panel as a download chip. No download call.</div>
+    </div>
+
+    <div class="trace">
+      <div class="ask">"What's due this week?"</div>
+      <ol>
+        <li><code>list_courses(term)</code> &rarr; every course id for the term</li>
+        <li><code>get_assignments(course_id)</code> <strong>once per course</strong> &mdash; there is no cross-course due-date tool on the agent side</li>
+        <li>Read the <span class="k">Upcoming</span> bucket from each and merge by <code>due</code></li>
+      </ol>
+      <div class="out">Cost scales with course count. The Home page's task ring gets the same answer in one shot from <code>GET /canvas/tasks</code>, a REST route the agent does not have.</div>
+    </div>
+
+    <div class="trace">
+      <div class="ask">"How am I doing this semester?"</div>
+      <ol>
+        <li><code>get_grades(term)</code> &mdash; one call, no <code>list_courses</code> needed; it returns ids as well as scores</li>
+        <li>Drill into any course with <code>get_assignment_grades(course_id)</code></li>
+      </ol>
+      <div class="out">"This semester" resolves to the most recent term that actually has grades &mdash; a term that just started has none &mdash; and the agent says which term it used.</div>
+    </div>
+
+    <div class="trace">
+      <div class="ask">"What haven't I turned in for 334?"</div>
+      <ol>
+        <li><code>list_courses()</code> &rarr; match on the <span class="k">"334"</span> fragment</li>
+        <li><code>get_unsubmitted(course_id)</code> &rarr; name, points possible, due date</li>
+      </ol>
+      <div class="out">An empty list means nothing is outstanding, not that the lookup failed &mdash; and the agent reports it that way.</div>
+    </div>
+
+    <div class="trace">
+      <div class="ask">"Where's the homework 2 handout?"</div>
+      <ol>
+        <li><code>list_courses()</code> &rarr; <code>course_id</code></li>
+        <li><code>get_assignment_files(course_id)</code> &rarr; the PDF with the actual questions, plus starter files and outside links</li>
+      </ol>
+      <div class="out">These come out of assignment descriptions, because <code>/courses/{id}/files</code> returns 403 whenever an instructor hides the Files tab from students.</div>
+    </div>
+
+    <div class="trace">
+      <div class="ask">"Save lectures 1 to 3 into a folder called 334"</div>
+      <ol>
+        <li><code>list_courses()</code> &rarr; <code>course_id</code></li>
+        <li><code>get_page_files</code> three times, or once unfiltered &rarr; collect the <code>file.id</code> values</li>
+        <li><code>download_files(file_ids, folder="334")</code> &rarr; names, sizes and full paths written</li>
+      </ol>
+      <div class="out">Only on an explicit save-to-disk request. <code>folder</code> is one bare name, sanitised against traversal; nothing can be written outside <code>~/Downloads</code>.</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================ 4 - NOTES ============================ -->
+<section class="section notes-world">
+  <div class="section-head">
+    <div class="section-num">World B &middot; 04</div>
+    <h2>Notes: a two-step chain, and no third step</h2>
+  </div>
+
+  <p>Notes have no tree, no folders, no search endpoint and no link to a course. There are two tools, and the second is unusable until the first has run &mdash; note ids are not in the title, the user does not know them, and one the model invents either fails or quietly reads back a different note.</p>
+
+  <figure>
+    <div class="fig-frame">
+      <svg viewBox="0 0 900 280" role="img" aria-label="The notes chain: list_notes returns id, title, preview, characters and updated_at; those ids are the only source for read_notes, which returns the full body flattened from HTML to plain text with pasted images replaced by an image marker.">
+        <defs>
+          <marker id="n-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"></path>
+          </marker>
+          <marker id="n-arB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#3F5A6B"></path>
+          </marker>
+        </defs>
+
+        <rect x="330" y="14" width="240" height="40" rx="3" fill="none" stroke="currentColor" stroke-width="1.1" stroke-dasharray="4 3" opacity="0.55"></rect>
+        <text x="450" y="39" font-size="11.5" fill="currentColor" opacity="0.75" text-anchor="middle" font-family="IBM Plex Mono, monospace">backend :8000 &middot; GET /notes</text>
+        <g stroke="currentColor" stroke-width="1" fill="none" opacity="0.45" marker-end="url(#n-ar)">
+          <path d="M 370 54 L 191 54 L 191 94"></path>
+          <path d="M 530 54 L 706 54 L 706 94"></path>
+        </g>
+
+        <rect x="46" y="102" width="290" height="56" rx="3" fill="none" stroke="#3F5A6B" stroke-width="1.7"></rect>
+        <text x="191" y="127" font-size="13.5" font-weight="600" fill="#3F5A6B" text-anchor="middle" font-family="IBM Plex Mono, monospace">list_notes()</text>
+        <text x="191" y="146" font-size="10.5" fill="#3F5A6B" opacity="0.9" text-anchor="middle" font-family="IBM Plex Sans, sans-serif">every note, newest edit first</text>
+        <text x="191" y="184" font-size="10.5" fill="currentColor" opacity="0.7" text-anchor="middle" font-family="IBM Plex Mono, monospace">id &middot; title &middot; preview</text>
+        <text x="191" y="200" font-size="10.5" fill="currentColor" opacity="0.7" text-anchor="middle" font-family="IBM Plex Mono, monospace">characters &middot; updated_at</text>
+
+        <rect x="560" y="102" width="292" height="56" rx="3" fill="none" stroke="#3F5A6B" stroke-width="1.7"></rect>
+        <text x="706" y="127" font-size="13.5" font-weight="600" fill="#3F5A6B" text-anchor="middle" font-family="IBM Plex Mono, monospace">read_notes([ids])</text>
+        <text x="706" y="146" font-size="10.5" fill="#3F5A6B" opacity="0.9" text-anchor="middle" font-family="IBM Plex Sans, sans-serif">many ids in one call</text>
+        <text x="706" y="184" font-size="10.5" fill="currentColor" opacity="0.7" text-anchor="middle" font-family="IBM Plex Mono, monospace">id &middot; title &middot; content</text>
+        <text x="706" y="200" font-size="10.5" fill="currentColor" opacity="0.7" text-anchor="middle" font-family="IBM Plex Mono, monospace">updated_at</text>
+
+        <line x1="336" y1="130" x2="552" y2="130" stroke="#3F5A6B" stroke-width="1.8" marker-end="url(#n-arB)"></line>
+        <text x="444" y="120" font-size="12" fill="#3F5A6B" text-anchor="middle" font-family="IBM Plex Sans, sans-serif" font-weight="600">ids</text>
+        <text x="444" y="150" font-size="10" fill="#3F5A6B" opacity="0.85" text-anchor="middle" font-family="IBM Plex Sans, sans-serif">the only source there is</text>
+
+        <line x1="46" y1="230" x2="852" y2="230" stroke="currentColor" stroke-width="1" opacity="0.2"></line>
+        <text x="46" y="256" font-size="10.5" fill="currentColor" opacity="0.75" font-family="IBM Plex Mono, monospace">&lt;p&gt;text&lt;/p&gt;&lt;img src="data:image/png;base64,..."&gt;</text>
+        <line x1="500" y1="252" x2="548" y2="252" stroke="currentColor" stroke-width="1.1" opacity="0.6" marker-end="url(#n-ar)"></line>
+        <text x="562" y="256" font-size="10.5" fill="currentColor" opacity="0.75" font-family="IBM Plex Mono, monospace">text + [image]</text>
+        <text x="852" y="256" font-size="10" fill="currentColor" opacity="0.55" text-anchor="end" font-family="IBM Plex Sans, sans-serif">flattened before it reaches the model</text>
+      </svg>
+    </div>
+    <figcaption><b>Both tools read the same REST endpoints, but only the first one produces ids.</b> Note bodies are stored as HTML by the contentEditable editor, and a pasted screenshot lands in there as a base64 data URI &mdash; so the server flattens to plain text and throws the bytes away, which the model could not read in any case.</figcaption>
+  </figure>
+
+  <div class="levels">
+    <div class="level">
+      <div class="level-tag">S1</div>
+      <div class="level-body">
+        <h4><code>list_notes()</code> &mdash; no arguments, always first</h4>
+        <p>Returns every note, most recently edited first: <span class="fields">id &middot; title &middot; preview &middot; characters &middot; updated_at</span>. Titles are optional in the editor, so an untitled note comes back as <span class="k">(untitled)</span> and the 160-character preview is the only thing identifying it. Matching runs on substrings, case-insensitively, over the preview as well as the title.</p>
+      </div>
+    </div>
+    <div class="level">
+      <div class="level-tag">S2</div>
+      <div class="level-body">
+        <h4><code>read_notes([ids])</code> &mdash; batched, and forgiving of one bad id</h4>
+        <p>Takes several ids at once, so a question spanning three notes is one call rather than three. An id with nothing behind it comes back carrying <code>error</code> instead of content, and the rest are still returned. When two or three notes could be the one meant, the agent reads them all and answers from whichever fits &mdash; asking the user to disambiguate is the last resort, not the first move.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="trace-grid">
+    <div class="trace">
+      <div class="ask">"What did I write about the automata proof?"</div>
+      <ol>
+        <li><code>list_notes()</code> &rarr; scan titles <em>and</em> previews for <span class="k">automata</span></li>
+        <li><code>read_notes([3, 7])</code> &mdash; both candidates in one call</li>
+        <li>Answer from the body that actually fits, and flag any <span class="k">[image]</span> marker sitting where the proof was</li>
+      </ol>
+      <div class="out">The agent answers only from what a note literally says. A pasted screenshot is unavailable to it, so it reports that a picture is there rather than guessing at what it showed.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 5 - INVARIANTS ============================ -->
+<section class="section">
+  <div class="section-head">
+    <div class="section-num">Behaviour &middot; 05</div>
+    <h2>The rules the agent runs under</h2>
+  </div>
+  <p>Each of these is enforced twice &mdash; once in the system prompt the model sees on every turn, and once in the tool docstrings, which are the only channel it gets while choosing a call.</p>
+
+  <div class="rules">
+    <div class="rule-row">
+      <h4>Every id comes from a tool result</h4>
+      <p>Never from the user, never from a guess, never carried over from an earlier question about something else. This holds for course ids, file ids and note ids alike.</p>
+    </div>
+    <div class="rule-row">
+      <h4>Names are matched on substrings, against every name field</h4>
+      <p>Courses carry two names and the readable one is not where the field name suggests. If several match, the agent asks which, listing title, code and term. If none match, it says so and shows what it did find, rather than concluding the course does not exist.</p>
+    </div>
+    <div class="rule-row">
+      <h4>Files are handed over as links, not fetched</h4>
+      <p>The reply is read in a browser panel that renders Markdown, so a file becomes <code>[L1.Automata.pdf](url) (1183 KB)</code>. That url is pre-signed and expires, so the agent gives it out on discovery rather than describing the file and waiting to be asked.</p>
+    </div>
+    <div class="rule-row">
+      <h4>Nothing is stated that a tool did not return</h4>
+      <p>No number, filename, date or grade gets invented. An empty tool result is reported as empty rather than filled in.</p>
+    </div>
+    <div class="rule-row">
+      <h4>The conversation lives in the browser</h4>
+      <p><code>POST /chat</code> keeps no session &mdash; the panel owns the transcript and resends the whole history with every message, so two tabs asking at once never see each other's conversation. The LangGraph agent itself is built once and reused behind a lock, so no message pays a fresh MCP server start-up.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ 6 - CEILINGS ============================ -->
+<section class="section">
+  <div class="section-head">
+    <div class="section-num">Boundaries &middot; 06</div>
+    <h2>What it cannot retrieve</h2>
+  </div>
+  <p>Worth knowing before asking. None of these are bugs; they are the edges of the eleven tools.</p>
+
+  <div class="limits">
+    <div class="limit"><div class="x">&mdash;</div><p><strong>No cross-course view in one call.</strong> Every structure and grade tool below the top level takes a single <code>course_id</code>. "What's due everywhere this week" is a fan-out, one call per course. The REST route <code>GET /canvas/tasks</code> does it in one pass for the Home page, but it is not exposed as an MCP tool.</p></div>
+    <div class="limit"><div class="x">&mdash;</div><p><strong>No writing to Canvas.</strong> No submitting, no commenting, no uploading, no calendar edits. Every Canvas tool is a GET; the one write in the whole server puts files in <code>~/Downloads</code>.</p></div>
+    <div class="limit"><div class="x">&mdash;</div><p><strong>No creating or editing notes.</strong> The backend has <code>POST</code>, <code>PATCH</code> and <code>DELETE</code> on <code>/notes</code>, and the To-Do page uses all three &mdash; but the agent is wired only to the two read paths.</p></div>
+    <div class="limit"><div class="x">&mdash;</div><p><strong>No reading a file's contents.</strong> The tools return a PDF's name, type, size and url. Nothing opens it, so the agent cannot answer a question about what is <em>inside</em> a lecture deck &mdash; only point at it.</p></div>
+    <div class="limit"><div class="x">&mdash;</div><p><strong>No images.</strong> A screenshot pasted into a note arrives as the marker <span class="k">[image]</span>, with the bytes discarded before the model ever sees them.</p></div>
+    <div class="limit"><div class="x">&mdash;</div><p><strong>No note search.</strong> There is no query endpoint; finding a note means listing all of them and matching on title and preview in the model's head.</p></div>
+    <div class="limit"><div class="x">&mdash;</div><p><strong>No files a hidden Files tab would have shown.</strong> Attachments are recovered by scraping <code>/files/{id}</code> links out of page and assignment HTML. A file linked no other way, or one this Canvas token cannot read, is silently absent rather than reported as an error.</p></div>
+    <div class="limit"><div class="x">&mdash;</div><p><strong>One page of results per call.</strong> Canvas requests ask for 100 items and do not follow pagination links, so a collection larger than 100 &mdash; courses on the account, assignments in one course, items in one module &mdash; is cut off at that ceiling.</p></div>
+    <div class="limit"><div class="x">&mdash;</div><p><strong>Nothing from the rest of FocusLab.</strong> Spotify, queues, the Pomodoro timer and the calendar have no tools. The agent sees Canvas and notes, and nothing else in the app.</p></div>
+  </div>
+</section>
+
+<footer>
+  <span>FocusLab_MCP/server.py &middot; 11 tools</span>
+  <span>backend/apis/canvas/core.py</span>
+  <span>FocusLab_MCP/notes.py</span>
+  <span>Client_MCP/client_MCP.py</span>
+</footer>
+
+</div>
