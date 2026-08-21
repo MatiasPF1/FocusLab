@@ -41,7 +41,7 @@ def create_note(
     3-Return the created note (now with its id, created_at and updated_at filled in)
     '''
     #1-)
-    note = Note(title=payload.title, content=payload.content, cover=payload.cover)
+    note = Note(title=payload.title, content=payload.content)
     #2-)Persist the new row
     session.add(note)
     session.commit()

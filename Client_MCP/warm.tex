@@ -1,0 +1,66 @@
+% Not a document anyone reads: it exists so the image build compiles it once.
+%
+% Tectonic fetches packages, fonts and format files out of its bundle the first
+% time a document asks for them. Everything the LaTeX prompt in latex.py tells
+% Claude to use is therefore used here, so that fetching happens at build time
+% and a converted page renders straight away.
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{hyperref}
+
+\definecolor{warm}{HTML}{FF7369}
+\lstset{basicstyle=\ttfamily\small, breaklines=true, showstringspaces=false}
+
+\title{Warm-up}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Section}
+\subsection{Subsection}
+\subsubsection{Subsubsection}
+\paragraph{Paragraph}
+\textbf{Bold}, \textit{italic}, \underline{underlined},
+\textcolor{warm}{coloured}, \textcolor[HTML]{529CCA}{by hex},
+\texttt{typewriter}, \href{https://example.com}{a link}, size\_t, 100\%,
+\textbackslash{} \textasciitilde{} \textasciicircum{}.
+
+\begin{itemize}
+    \item first
+\end{itemize}
+
+\begin{enumerate}
+    \item first
+\end{enumerate}
+
+\begin{quote}
+    Quoted.
+\end{quote}
+
+\begin{center}
+    Centred.
+\end{center}
+
+\begin{tabular}{|l|r|}
+    \hline
+    left & right \\
+    \hline
+\end{tabular}
+
+\[
+    \sum_{i=1}^{n} \sqrt{x_i^{2}} \leq \alpha \to \beta
+\]
+
+\begin{lstlisting}[language=C]
+int radius = 10;
+float pi = 3.14;
+\end{lstlisting}
+
+\end{document}

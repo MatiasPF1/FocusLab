@@ -5,6 +5,13 @@ langgraph
 langchain-mcp-adapters
 langchain-anthropic
 
+# latex.py calls Claude directly, without LangChain in the way.
+anthropic
+
+# pdf.py, for the pictures a converted page includes: the typesetting engine
+# reads PNG and JPEG, so a pasted GIF or WebP is converted with this first.
+pillow
+
 # http_MCP.py, the HTTP endpoint the frontend chat panel posts to.
 fastapi
 uvicorn[standard]

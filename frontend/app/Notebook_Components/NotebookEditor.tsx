@@ -1,11 +1,15 @@
 "use client";
 
-import { useState, type RefObject } from "react";
+import { useEffect, useState, type RefObject } from "react";
 import {
   ArrowLeft,
+  Check,
   ChevronLeft,
   ChevronRight,
+  Copy,
+  Download,
   ImagePlus,
+  Loader2,
   Plus,
   Sigma,
   Trash2,
@@ -20,14 +24,14 @@ import { coverSrc } from "./covers";
  * The Notebook's writing surface: a spread of two panes.
  *
  * Left is the page being written, one page at a time. Right is fixed - it does
- * not scroll away with the writing - and is where a converted version of the
- * page will eventually appear. Its button is deliberately inert for now.
+ * not scroll away with the writing - and holds the LaTeX of that same page,
+ * transcribed by the agent service on demand.
  *
  * The left pane is the same uncontrolled contentEditable the To-Do editor uses,
  * so the owner holds the ref and re-syncs it when the open page changes.
  */
 
-// An entry as returned by the backend's /notes endpoints.
+// An entry as returned by the backend's /notebook endpoints.
 export type Note = {
   id: number;
   title: string;
@@ -37,11 +41,53 @@ export type Note = {
   updated_at: string;
 };
 
+/*
+ * What the agent hands back for one page: the .tex it wrote, and the PDF it
+ * compiled from that exact source.
+ *
+ * `pdfUrl` points at those bytes as a blob, and is null when the document would
+ * not compile even after the agent's repair pass. The source is still worth
+ * showing in that case, which is why the two are separate fields and not one or
+ * the other.
+ */
+export type LatexResult = {
+  source: string;
+  pdfUrl: string | null;
+  pdfError: string | null;
+  // When this conversion was made, and whether the page has been edited since.
+  // Both are about a stored conversion being read back - one that has just come
+  // out of the agent is new and, by definition, current.
+  madeAt: string | null;
+  stale: boolean;
+};
+
 export function previewText(html: string) {
   return html
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+/* Which half of the output pane is on show. */
+type View = "rendered" | "source";
+
+/* "21 Aug, 23:14" - a stored conversion says when it was made. */
+function formatMadeAt(iso: string) {
+  // The backend stamps UTC without saying so, which a browser would otherwise
+  // read as local time and show an hour or five out.
+  const stamped = iso.endsWith("Z") ? iso : `${iso}Z`;
+  return new Date(stamped).toLocaleString("en-US", {
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+/* What the PDF is called once it is on disk: the entry, and which page of it. */
+function pdfFileName(title: string, pageIndex: number) {
+  const name = (title.trim() || "Untitled").replace(/[\\/:*?"<>|]/g, "-");
+  return `${name} - page ${pageIndex + 1}.pdf`;
 }
 
 function formatFullDate(iso: string) {
@@ -60,6 +106,12 @@ type NotebookEditorProps = {
   // Which page of this entry is open, and how many there are.
   pageIndex: number;
   pageCount: number;
+  // The right pane: the typeset page and the source it came from, or nothing
+  // until it is asked for.
+  latex: LatexResult | null;
+  latexBusy: boolean;
+  latexError: string | null;
+  onTransformLatex: () => void;
   onBack: () => void;
   onDelete: (id: number) => void;
   onTitleChange: (id: number, title: string) => void;
@@ -77,6 +129,10 @@ export default function NotebookEditor({
   contentIsEmpty,
   pageIndex,
   pageCount,
+  latex,
+  latexBusy,
+  latexError,
+  onTransformLatex,
   onBack,
   onDelete,
   onTitleChange,
@@ -87,7 +143,35 @@ export default function NotebookEditor({
   onDeletePage,
 }: NotebookEditorProps) {
   const [pickingCover, setPickingCover] = useState(false);
+  // Flips back on its own a moment after a copy, so the button says what just
+  // happened without needing a toast.
+  const [copied, setCopied] = useState(false);
+  // The typeset page is what the pane is for, so it opens on it; the source is
+  // a tab away for anyone who wants to paste it into Overleaf.
+  const [view, setView] = useState<View>("rendered");
   const cover = coverSrc(note.cover);
+
+  // What is actually on show. A document that would not compile has nothing to
+  // render, so it falls back to its source rather than an empty frame - and it
+  // falls back without touching the choice the user made, which is waiting for
+  // them again the next time there is a PDF.
+  const shown: View = latex?.pdfUrl ? view : "source";
+
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), 1500);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
+  async function copyLatex() {
+    if (!latex) return;
+    try {
+      await navigator.clipboard.writeText(latex.source);
+      setCopied(true);
+    } catch {
+      // Clipboard access can be refused; the source is on screen to select.
+    }
+  }
 
   const atFirstPage = pageIndex === 0;
   const atLastPage = pageIndex === pageCount - 1;
@@ -265,20 +349,159 @@ export default function NotebookEditor({
             <p className="text-[10px] uppercase tracking-[0.14em] text-ob-slate">
               Output
             </p>
-            <button
-              type="button"
-              className="flex items-center gap-1.5 rounded-md border border-ob-line px-2.5 py-1 text-xs text-ob-slate transition hover:border-ob-slate hover:text-ob-mist"
-            >
-              <Sigma aria-hidden="true" size={13} />
-              Transform to LaTeX
-            </button>
+
+            <div className="flex items-center gap-1">
+              {/* Only worth showing once there is something to look at */}
+              {latex && !latexBusy && (
+                <>
+                  {/* The page or its source. Both live at once, so this is a
+                      switch between two things already here, not a reload. */}
+                  {latex.pdfUrl && (
+                    <div className="mr-1 flex items-center rounded-md border border-ob-line p-0.5">
+                      {(["rendered", "source"] as View[]).map((option) => (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => setView(option)}
+                          className={`rounded-[3px] px-2 py-0.5 text-[11px] capitalize transition ${
+                            shown === option
+                              ? "bg-ob-raised text-ob-mist"
+                              : "text-ob-slate hover:text-ob-mist"
+                          }`}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Icons alone: the row already carries a switch and a
+                      button, and this pane can be as narrow as 20rem. */}
+                  {shown === "rendered" && latex.pdfUrl ? (
+                    <a
+                      href={latex.pdfUrl}
+                      download={pdfFileName(note.title, pageIndex)}
+                      className="rounded-md p-1.5 text-ob-slate transition hover:bg-ob-raised hover:text-ob-mist"
+                      title="Save the PDF"
+                      aria-label="Save the PDF"
+                    >
+                      <Download aria-hidden="true" size={14} />
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={copyLatex}
+                      className="rounded-md p-1.5 text-ob-slate transition hover:bg-ob-raised hover:text-ob-mist"
+                      title={copied ? "Copied" : "Copy the LaTeX source"}
+                      aria-label="Copy the LaTeX source"
+                    >
+                      {copied ? (
+                        <Check aria-hidden="true" size={14} />
+                      ) : (
+                        <Copy aria-hidden="true" size={14} />
+                      )}
+                    </button>
+                  )}
+                </>
+              )}
+
+              <button
+                type="button"
+                onClick={onTransformLatex}
+                disabled={latexBusy}
+                className="flex items-center gap-1.5 rounded-md border border-ob-line px-2.5 py-1 text-xs text-ob-slate transition hover:border-ob-slate hover:text-ob-mist disabled:pointer-events-none disabled:opacity-50"
+              >
+                {latexBusy ? (
+                  <Loader2 aria-hidden="true" size={13} className="animate-spin" />
+                ) : (
+                  <Sigma aria-hidden="true" size={13} />
+                )}
+                {latexBusy ? "Transforming" : latex ? "Transform again" : "Transform to LaTeX"}
+              </button>
+            </div>
           </div>
 
-          <div className="flex flex-1 items-center justify-center px-8">
-            <p className="max-w-[16rem] text-center text-sm leading-relaxed text-ob-slate/70">
-              The LaTeX version of this page will appear here.
-            </p>
-          </div>
+          {/*
+           * Four states, one slot: working, failed, done, and nothing asked for
+           * yet.
+           */}
+          {latexBusy ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-3 px-8">
+              <Loader2
+                aria-hidden="true"
+                size={18}
+                className="animate-spin text-ob-slate"
+              />
+              <p className="max-w-[16rem] text-center text-sm leading-relaxed text-ob-slate/70">
+                Reading this page, setting it in LaTeX and typesetting it.
+                Pictures take a moment longer.
+              </p>
+            </div>
+          ) : latexError ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-1 px-8">
+              <p className="max-w-[18rem] text-center text-sm leading-relaxed text-red-400">
+                {latexError}
+              </p>
+              <p className="text-xs text-ob-slate/70">Try again when it is up.</p>
+            </div>
+          ) : latex ? (
+            <>
+              {/* A line about where this came from, above whichever half is
+                  showing. Nothing is said about a conversion that was just
+                  made from the page as it stands - that is the normal case and
+                  needs no explaining. */}
+              {(latex.stale || latex.madeAt) && (
+                <p
+                  className={`shrink-0 border-b px-5 py-1.5 text-[11px] ${
+                    latex.stale
+                      ? "border-amber-400/25 bg-amber-400/5 text-amber-300/90"
+                      : "border-ob-line/60 text-ob-slate"
+                  }`}
+                >
+                  {latex.stale
+                    ? "The page has changed since this was made. Transform again to catch it up."
+                    : `Converted ${formatMadeAt(latex.madeAt!)}`}
+                </p>
+              )}
+
+              {shown === "rendered" && latex.pdfUrl ? (
+                /* The PDF itself, in the browser's own viewer - scrolling,
+                   zooming and printing come with it. */
+                <iframe
+                  key={latex.pdfUrl}
+                  src={latex.pdfUrl}
+                  title="The typeset page"
+                  className="min-h-0 flex-1 border-0 bg-ob-base"
+                />
+              ) : (
+                <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+                  {/* A document that would not compile still has its source to
+                      show, with the engine's complaint above it. */}
+                  {latex.pdfError && (
+                    <div className="mb-4 rounded-md border border-red-400/30 bg-red-400/5 px-3 py-2">
+                      <p className="text-xs font-medium text-red-400">
+                        This did not typeset, so only the source is here.
+                      </p>
+                      <pre className="mt-1.5 max-h-32 overflow-y-auto whitespace-pre-wrap break-words font-mono text-[11px] leading-[1.5] text-ob-slate">
+                        {latex.pdfError}
+                      </pre>
+                    </div>
+                )}
+                {/* A whole .tex document, so it wraps rather than scrolling
+                    sideways - this pane is too narrow to read a long line in. */}
+                <pre className="whitespace-pre-wrap break-words font-mono text-[12px] leading-[1.6] text-ob-mist/90">
+                  {latex.source}
+                </pre>
+              </div>
+              )}
+            </>
+          ) : (
+            <div className="flex flex-1 items-center justify-center px-8">
+              <p className="max-w-[16rem] text-center text-sm leading-relaxed text-ob-slate/70">
+                The LaTeX version of this page will appear here.
+              </p>
+            </div>
+          )}
         </aside>
       </div>
     </section>

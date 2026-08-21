@@ -9,6 +9,15 @@ from sqlmodel import SQLModel, Field
 # Model For To-Do Notes
 ##########
 
+'''
+The To-Do page's rows, and only those.
+
+The Notebook used to write here too, which meant one note appeared on both
+pages and an edit on either moved the other. It has its own table now, in
+models/notebook.py, and nothing in this file knows about it - a column added
+here is a To-Do column, and a column added there is a Notebook one.
+'''
+
 #                                    Colummns Construction
 #   ┌──────────────────────────────┐
 #   │             NOTE             │
@@ -34,10 +43,6 @@ class Note(SQLModel, table=True):
     title: str = ""
     # Rich-text HTML from the To-Do note editor, unbounded so long notes are never truncated.
     content: str = Field(default="", sa_column=Column(Text))
-    # Which cover art the Notebook shows, as an id from the frontend's cover
-    # catalogue ("cover1") rather than a path, so moving or renaming the image
-    # files never invalidates what is stored here. Empty means no cover.
-    cover: str = ""
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -59,7 +64,6 @@ class NoteCreate(SQLModel):
     '''
     title: str = ""
     content: str = ""
-    cover: str = ""
 
 
 class NoteUpdate(SQLModel):
@@ -70,13 +74,11 @@ class NoteUpdate(SQLModel):
     '''
     title: str | None = None
     content: str | None = None
-    cover: str | None = None
 
 
 class NoteRead(SQLModel):
     id: int
     title: str
     content: str
-    cover: str
     created_at: datetime
     updated_at: datetime

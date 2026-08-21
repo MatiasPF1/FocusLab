@@ -38,13 +38,13 @@ table that is already there, so a model that grows a field would read back as
 startup, and is a no-op from then on.
 
     table -> column name -> the SQLite type and default to add it with
+
+Empty at the moment. Its one entry was note.cover, from when the Notebook was
+still writing into the To-Do table; covers now live on notebook_entry, which is
+created complete. A file written before the split keeps that unused column -
+nothing reads it, and SQLite cannot drop a column without rebuilding the table.
 '''
-_ADDED_COLUMNS = {
-    "note": {
-        # The Notebook's cover art. Added after the To-Do notes shipped.
-        "cover": "TEXT NOT NULL DEFAULT ''",
-    },
-}
+_ADDED_COLUMNS = {}
 
 
 def _add_missing_columns():
@@ -66,18 +66,65 @@ def _add_missing_columns():
         connection.commit()
 
 
+def _table_exists(name: str) -> bool:
+    '''Whether this database file already has that table.'''
+    with engine.connect() as connection:
+        found = connection.exec_driver_sql(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+            (name,),
+        ).first()
+    return found is not None
+
+
+def _copy_notes_into_notebook():
+    '''
+    The Notebook's share of the To-Do table, handed over once.
+
+    Both pages used to read and write the same `note` rows, so every note
+    showed up in both places and an edit on one moved the other. The Notebook
+    has its own table now, and this copies what was there when that happened so
+    the page still shows what it showed the day before. The To-Do rows are left
+    exactly where they are - this copies, it does not move. From here the two
+    are separate rows and go their own way.
+
+    Called only when notebook_entry has just been created, which happens once
+    in the life of a database file, so it cannot run twice and cannot bring
+    back entries somebody deleted.
+    '''
+    with engine.connect() as connection:
+        #1-)An empty result means there is no To-Do table yet: a brand new
+        #   install, with nothing to hand over
+        columns = {row[1] for row in connection.exec_driver_sql("PRAGMA table_info(note)")}
+        if not columns:
+            return
+        #2-)cover is only on files written while the two pages shared this table
+        cover = "cover" if "cover" in columns else "''"
+        connection.exec_driver_sql(
+            "INSERT INTO notebook_entry (title, content, cover, created_at, updated_at) "
+            f"SELECT title, content, {cover}, created_at, updated_at FROM note"
+        )
+        connection.commit()
+
+
 def create_db_and_tables():
     '''
     1-Import models so SQLModel knows every table that needs to exist
-    2-Create Tables
-    3-Bring older database files up to date with columns added since
+    2-Note whether the Notebook is about to get its table for the first time
+    3-Create Tables
+    4-Bring older database files up to date with columns added since
+    5-Hand the Notebook its copy of the notes, if this is that first time
     '''
     #1-)Importing models registers every table class with SQLModel's metadata
     import models  # noqa: F401 - its __init__ imports every model module
-    #2-)Creates tables that don't exist yet (does nothing to tables that already exist)
+    #2-)Asked before create_all, since afterwards the table always exists
+    notebook_is_new = not _table_exists("notebook_entry")
+    #3-)Creates tables that don't exist yet (does nothing to tables that already exist)
     SQLModel.metadata.create_all(engine)
-    #3-)Which is why the columns have to be handled separately
+    #4-)Which is why the columns have to be handled separately
     _add_missing_columns()
+    #5-)Once ever, on the file that predates the split
+    if notebook_is_new:
+        _copy_notes_into_notebook()
 
 
 def get_session() -> Generator[Session, None, None]:

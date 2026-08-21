@@ -60,6 +60,27 @@ export function removePage(pages: string[], index: number): string[] {
   return next;
 }
 
+/*
+ * A short fingerprint of one page, for telling whether a stored conversion was
+ * made from the page as it stands now or from an earlier version of it.
+ *
+ * FNV-1a: a few lines, synchronous, and fast enough to run on a page carrying
+ * pasted screenshots. Nothing here is defending against anything - a collision
+ * would mean an edited page looked unedited, which is the same as forgetting to
+ * check. crypto.subtle would be the stronger answer and is asynchronous, which
+ * this does not need to be.
+ */
+export function pageFingerprint(html: string): string {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < html.length; index++) {
+    hash ^= html.charCodeAt(index);
+    // The FNV prime, by shifts, because a plain multiply overflows into floats.
+    hash = (hash + ((hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24))) >>> 0;
+  }
+  // Length as well as hash: cheap, and it separates the near-misses.
+  return `${hash.toString(16)}-${html.length.toString(16)}`;
+}
+
 // Whether a page has anything on it once the tags are stripped.
 export function pageIsEmpty(html: string): boolean {
   return (

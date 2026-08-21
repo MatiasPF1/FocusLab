@@ -10,6 +10,7 @@ from database import create_db_and_tables
 from apis.spotify import router as spotify_router
 from apis.queues import router as queues_router
 from apis.todo import router as todo_router
+from apis.notebook import router as notebook_router
 from apis.Retrieving_Keys import router as keys_router
 from apis.canvas import router as canvas_router
 
@@ -88,6 +89,9 @@ app.include_router(queues_router)
 
 # Connect To-Do note routes to the main application
 app.include_router(todo_router)
+
+# Connect Notebook routes to the main application
+app.include_router(notebook_router)
 
 # Connect the setup-page credential routes to the main application
 app.include_router(keys_router)
