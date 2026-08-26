@@ -21,7 +21,6 @@ document for LaTeX to include.
 
 import asyncio
 import base64
-import os
 import re
 from html import escape, unescape
 from html.parser import HTMLParser
@@ -31,7 +30,11 @@ from typing import NamedTuple
 from anthropic import AsyncAnthropic
 from dotenv import load_dotenv
 
+from keys import require_anthropic_key
+
 HERE = Path(__file__).parent
+# The fallback, not the source of truth: the key normally comes from the
+# FocusLab settings page. See keys.py.
 load_dotenv(HERE / ".env")
 
 
@@ -516,11 +519,9 @@ def _anthropic() -> AsyncAnthropic:
     """Built on first use, so importing this module never needs a key."""
     global _client
     if _client is None:
-        # .env uses the shorter name; the SDK's own name works too.
-        key = os.getenv("ANTHROPIC_KEY") or os.getenv("ANTHROPIC_API_KEY")
-        if not key:
-            raise RuntimeError("No Anthropic key. Put ANTHROPIC_KEY in Client_MCP/.env.")
-        _client = AsyncAnthropic(api_key=key)
+        # The key the user saved in FocusLab, falling back to this folder's
+        # .env. See keys.py for why the app wins over the file.
+        _client = AsyncAnthropic(api_key=require_anthropic_key())
     return _client
 
 

@@ -18,9 +18,9 @@
 
 <img src="docs/screenshots/home.png" alt="FocusLab: Pomodoro timer, Spotify queue, and live Canvas tasks in one window" width="100%">
 
-| **10,300** | **35** | **11** | **3** |
-|:---:|:---:|:---:|:---:|
-| lines of code | REST endpoints | MCP tools | containerised services |
+| **36** | **11** | **3** |
+|:---:|:---:|:---:|
+| REST endpoints | MCP tools | containerised services |
 
 </div>
 
@@ -28,13 +28,16 @@
 
 ## What this is
 
-**FocusLab registers itself as a Spotify Connect device.** Audio streams into the app's own tab; the Spotify client never has to be open. Device targeting, DRM iframe permissions, self healing device IDs, and an OAuth flow the vendor documents incorrectly.
+- **Ask about your coursework and get answers.** FocusLab ships its own MCP server — 11 tools over Canvas *and your own notes* — so the chat panel can:
+  - *"what's due this week?"* — across every course, not one at a time
+  - *"give me lectures 1 to 3"* — links come back clickable, straight from Canvas
+  - *"what is theory of computation about?"* — reads the course, or your own notes, and says
+- **Spotify plays inside the app.** FocusLab registers itself as a Connect device — the desktop client never has to be open.
+- **Notes come back typeset.** Write a page, press *Transform to LaTeX*, get a compiled PDF in the pane beside it.
+- **Nothing to configure.** No `.env`, no keys in files — you paste them into the app's own settings page.
 
-**It ships its own MCP server.** Eleven tools over Canvas LMS *and the user's own notes*, consumed by a LangGraph agent **and** by the app's REST API — from one framework free implementation, not two.
 
-**The agent is a product surface.** FocusAI is a chat panel docked in the sidebar, running in its own container. Ask for Lectures 1 to 3 and the reply comes back as **clickable download chips**: pre signed Canvas URLs rendered as Markdown, not files written into a container you cannot reach.
-
-**The Notebook typesets itself.** Write a page, press *Transform to LaTeX*, and the pane beside it fills with a compiled PDF. A pasted screenshot of code comes back as a real `lstlisting` — line numbered, syntax coloured, selectable text — not a picture of code. A diagram comes back as an embedded figure, fetched from the web if that is where the page points. Spelling and grammar are corrected on the way through and nothing else is: it is a transcription, not a rewrite. Every conversion is stored beside the page that produced it, so re-opening costs nothing, and the pane says so when the page has been edited since.
+</details>
 
 **Stack** · Next.js 16 · React 19 · TypeScript 5 · Tailwind 4 · FastAPI · SQLModel · SQLite · httpx · MCP (FastMCP) · LangGraph · Claude Sonnet 5 + Haiku 4.5 · Tectonic · Docker Compose
 
@@ -48,10 +51,11 @@ flowchart TD
         UI["5 workspaces<br/>Web Playback SDK"]
         NOTE["Notebook<br/>editor · PDF pane"]
         PANEL["FocusAI panel<br/>Markdown · download chips"]
+        KEYS["Settings<br/>Spotify · Canvas · Claude"]
     end
 
     subgraph API ["⚙️ Container · FastAPI · :8000"]
-        ROUTES["apis/ · 35 endpoints<br/>OAuth · queues · notes · notebook"]
+        ROUTES["apis/ · 36 endpoints<br/>OAuth · queues · notes · notebook · keys"]
         CORE["apis/canvas/core.py<br/>framework free"]
     end
 
@@ -62,17 +66,19 @@ flowchart TD
         TEX["latex.py · pdf.py<br/>Claude Sonnet · Tectonic"]
     end
 
-    DB[("SQLite<br/>queues · tracks · tokens<br/>notes · notebook · .tex + PDF")]
+    DB[("SQLite<br/>queues · tracks · tokens<br/>notes · notebook · .tex + PDF<br/>API keys")]
     SPOT["Spotify Web API"]
     CANVAS["Canvas LMS API"]
 
     UI -->|"REST · JSON"| ROUTES
+    KEYS -->|"POST /keys"| ROUTES
     PANEL -->|"full transcript"| HTTP
     NOTE -->|"one page of HTML"| HTTP
     NOTE -->|"stores .tex + PDF"| ROUTES
 
     HTTP --> LOOP
     HTTP --> TEX
+    LOOP -.->|"GET /keys/resolved<br/>no database of its own"| ROUTES
     LOOP -->|"MCP · stdio"| MCP
 
     ROUTES --> DB
@@ -81,7 +87,7 @@ flowchart TD
     CORE --> CANVAS
 
     MCP -->|"same core.py, loaded by path"| CANVAS
-    MCP -->|"GET /notes"| ROUTES
+    MCP -->|"GET /notes · /keys/resolved"| ROUTES
 
     SPOT -.->|"streams audio to the tab"| UI
 ```
@@ -94,17 +100,18 @@ flowchart TD
 ```bash
 git clone https://github.com/MatiasPF1/FocusLab.git
 cd FocusLab
-
-cp backend/.env.example backend/.env          # Spotify credentials
-cp Client_MCP/.env.example Client_MCP/.env    # Canvas token, Anthropic key
 docker compose up
 ```
 
-Frontend on `:3000`, API docs on `:8000/docs`, FocusAI on `:8001`. Three services, one command.
+Frontend on `:3000`, API docs on `:8000/docs`, FocusAI on `:8001`. Three services, one command, no configuration files to fill in first.
 
-Spotify needs an app at [developer.spotify.com](https://developer.spotify.com/dashboard) with redirect URI `http://127.0.0.1:8000/spotify/callback` — they banned `localhost` redirects on 2025-11-27, so the loopback IP is required.
+Keys are entered in the app instead: the gear at the foot of the sidebar opens a settings page with a tab per service — Spotify, Canvas, Claude — each carrying the steps and the link to where its key comes from. They are stored in the backend's own database and never leave the machine. Nothing needs a restart after saving, and the app runs without them; each service simply stays off until its tab is filled in.
+
+Spotify needs an app at [developer.spotify.com](https://developer.spotify.com/dashboard) with redirect URI `http://127.0.0.1:8000/spotify/callback` — they banned `localhost` redirects on 2025-11-27, so the loopback IP is required. The settings page states the same URI, ready to copy.
 
 The agent image carries the LaTeX engine, so its first build is the slow one: a static Tectonic binary plus a warm up compile that pulls every package a converted page needs into the image. That costs about 110 MB once, and buys a first conversion that typesets immediately instead of waiting on downloads.
+
+Its instructions are not in the Python. They live in `Client_MCP/skills/`, one folder per capability — `canvas-coursework`, `student-notes` — each a `SKILL.md` carrying `name`/`description` frontmatter and its rules in Markdown, the shape Anthropic's Agent Skills use. `prompt.py` loads them in a fixed order and wraps them in the agent's own framing. Teaching FocusAI something new is a folder, not a longer string, and `python Client_MCP/prompt.py` prints exactly what the model will be sent.
 
 The agent also answers on the command line, which is the faster loop when working on its prompt or tools:
 
@@ -120,6 +127,8 @@ Request path: `browser → http_MCP.py → client_MCP.py → FocusLab_MCP/server
 
 Single user, localhost only
 
+- **Every port is published to `127.0.0.1`, not `0.0.0.0`.** None of these services authenticates its caller, and that is deliberate for a single-user desktop app — what makes it safe is being unreachable from anywhere but this machine. A bare `"8000:8000"` in compose binds every interface, which on campus wifi puts the API on the subnet for anyone who scans it. CORS does not help here; it constrains browsers, not `curl`.
+- **Keys are the user's own and stay on their machine.** They are typed into the settings page, stored in the local database, and read back write only: `/keys/status` reports that a secret exists, never what it is. One route returns a secret, `/keys/resolved`, and it exists because the agent runs as its own process with no database of its own.
 - **Refresh tokens never reach the browser.** The frontend gets short lived access tokens from a dedicated endpoint.
 - **CSRF state is server side**, timing safe, single use, 10 minute TTL. CORS is an allowlist, and it is not authentication.
 - **Agent file writes are sandboxed** to `~/Downloads`, folder and filename both sanitized against traversal. Under Docker that path is inside a container, so the panel hands files over as Canvas links instead.

@@ -24,6 +24,7 @@ from sqlmodel import Session
 from models.spotify import SpotifyToken
 from database import get_session
 from apis.spotify.router import router
+from apis.Retrieving_Keys.core import resolve_spotify_config
 
 
 ##########
@@ -32,6 +33,11 @@ from apis.spotify.router import router
 
 SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize"
 SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token"
+#Where Spotify sends the user back, and the one value the settings page does not
+#ask for: it is fixed by what that page tells the user to register, and Spotify
+#stopped accepting "localhost" aliases in November 2025, so it is the literal
+#loopback IP. A .env may still override it for a setup on another port.
+DEFAULT_REDIRECT_URI = "http://127.0.0.1:8000/spotify/callback"
 #Where to send the user's browser back to once the Spotify OAuth dance is done.
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 #Single-user app: the Spotify token row always lives at this fixed primary key.
@@ -114,25 +120,27 @@ def claim_login_state(state: str | None) -> bool:
     return False
 
 
-def get_spotify_config():
+def get_spotify_config(session: Session):
     '''
-    1-Read Spotify credentials from the environment
-    2-Stop the request if any credential is missing
+    1-Read the credentials the user saved on the settings page
+    2-Stop the request if there is no usable pair anywhere
     3-Return the credentials to the caller
-    '''
-    #1-)Reads the Spotify credentials from the backend environment
-    client_id = os.getenv("SPOTIFY_CLIENT_ID")
-    client_secret = os.getenv("SPOTIFY_CLIENT_SECRET")
-    redirect_uri = os.getenv("SPOTIFY_REDIRECT_URI")
 
-    #2-)Stop the request if any required environment variable is missing
-    if not client_id or not client_secret or not redirect_uri:
+    resolve_spotify_config falls back to SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET
+    when nothing has been saved, which is all a fresh checkout has, but the
+    saved keys are the ones that win.
+    '''
+    #1-)Settings page first, .env second
+    credentials = resolve_spotify_config(session)
+    #2-)Neither source has a complete pair, so there is nothing to log in with
+    if not credentials:
         raise HTTPException(
-            status_code=500,
-            detail="Spotify environment variables are missing",
+            status_code=503,
+            detail="Spotify is not set up. Add your keys in Settings.",
         )
+    client_id, client_secret = credentials
     #3-)Hand the credentials back to whichever route called this
-    return client_id, client_secret, redirect_uri
+    return client_id, client_secret, os.getenv("SPOTIFY_REDIRECT_URI", DEFAULT_REDIRECT_URI)
 
 
 def get_token_record(session: Session) -> SpotifyToken | None:
@@ -184,7 +192,7 @@ async def refresh_access_token(session: Session):
     if not token or not token.refresh_token:
         return None
     #1.1-)Credentials required to authenticate the refresh request
-    client_id, client_secret, _ = get_spotify_config()
+    client_id, client_secret, _ = get_spotify_config(session)
     #2-)Ask Spotify to exchange the refresh token for a new access token
     async with httpx.AsyncClient() as client:
         token_response = await client.post(
@@ -292,7 +300,7 @@ async def get_playback_token(session: Session = Depends(get_session)):
 
 
 @router.get("/login")
-async def spotify_login():
+async def spotify_login(session: Session = Depends(get_session)):
     '''
     1-Getters and Random Val Generation
     2-Permision and Information we want from user
@@ -300,7 +308,7 @@ async def spotify_login():
     4-Temporarily Store State Value on the Server(To check Spotify Incomings)
     '''
     #1-)We need the client ID and redirect URI to build the Spotify URL.
-    client_id, _, redirect_uri = get_spotify_config()
+    client_id, _, redirect_uri = get_spotify_config(session)
     #1.1-)Generates a secure random value for this login attempt.
     state = secrets.token_urlsafe(32)
    #2-)Permissions FocusLab is requesting from the user
@@ -371,7 +379,7 @@ async def spotify_callback(
     ):
         return RedirectResponse(f"{FRONTEND_URL}/?spotify=error")
     #3-) Get the credentials needed for the token request
-    client_id, client_secret, redirect_uri = get_spotify_config()
+    client_id, client_secret, redirect_uri = get_spotify_config(session)
     #4-)HTTP Post Autorizathion code to Spotify
     async with httpx.AsyncClient() as client:
         token_response = await client.post(

@@ -5,16 +5,19 @@ FocusAI Agent that connects with the FocusLab MCP server.
 import asyncio
 import os
 import sys
-from datetime import date
 from pathlib import Path
 from dotenv import load_dotenv
 from langchain_anthropic import ChatAnthropic
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.prebuilt import create_react_agent
 
+from keys import require_anthropic_key
+from prompt import build_prompt
+
 HERE = Path(__file__).parent
+# Loaded first so keys.py can fall back to it, but the key the agent actually
+# runs on is resolved in get_agent() below - the settings page owns it now.
 load_dotenv(HERE / ".env")
-os.environ["ANTHROPIC_API_KEY"] = os.environ["ANTHROPIC_KEY"]   # .env uses the shorter name
 
 ####
 # 1- MCP Client
@@ -42,74 +45,19 @@ MCP = {
 # 2- Agent Role
 #####
 
+'''
+The system prompt is assembled from Client_MCP/skills/, one folder per
+capability, and built per request rather than once at import: this process
+stays up for days at a time, and the prompt carries today's date.
 
-PROMPT = f"""
-You answer questions about my Canvas coursework. Be brief.
+See prompt.py for the format and for why the skills are loaded here rather
+than through the Agent Skills API.
+'''
 
-Today is {date.today():%Y-%m-%d}.
 
-NAMING A COURSE
-Every course carries two names, and they are not what the field names suggest:
-  name  = the section code, e.g. "2026S CS 334-A"
-  title = the readable one,  e.g. "Theory of Computation"
-People almost always say the title, or a fragment of either ("334", "CS334",
-"theory of comp", "linear algebra"). So:
-
-  1. Call list_courses or get_grades first and match against BOTH fields,
-     case-insensitively, on substrings - never on an exact string.
-  2. Never invent or guess a course id. Every id must come from a tool result.
-  3. If several courses match, ask which one, listing title, code and term.
-  4. If none match, say so and show the courses you did find for that term.
-     Do not conclude the course does not exist - it may be in another term.
-
-TERMS
-Terms are named like "2026 Spring Semester". Pass one to get_grades or
-list_courses when the question names a semester. "This semester" means the most
-recent term that actually has grades: a term that has just started has none yet,
-so falling back to the newest graded term is correct, and say which you used.
-A course from years ago is still available - search all terms before giving up.
-
-NOTES
-The user's own notes are a separate world from Canvas, and reaching them is
-always two steps:
-
-  1. list_notes  - every note, with its id, title and a preview.
-  2. read_notes  - the bodies of the ids step 1 handed you.
-
-NEVER CALL read_notes WITHOUT HAVING CALLED list_notes. There is no other
-source of note ids: they are not in the title, the user does not know them, and
-one you made up will either fail or quietly return somebody else's note. This
-holds even when the user names a note exactly - the name still has to be looked
-up to get its id.
-
-Titles are optional, so notes come back as "(untitled)" often enough that the
-preview matters more than the title when working out which one is meant. Match
-on substrings, case-insensitively. When two or three notes could be it, read
-them all in one read_notes call and answer from whichever actually fits; asking
-the user to disambiguate is a last resort, not a first move.
-
-Answer only from what a note actually says. A note reads [image] where a
-screenshot was pasted - that picture is not available to you, so say it is
-there rather than guessing what it showed.
-
-FILES AND DOWNLOADS
-The person asking is reading your reply in a chat panel in their browser, and
-that panel renders Markdown. So hand files over as links they can click:
-
-    - [L1.Automata.pdf](<the file's url>) (1183 KB)
-
-Use the `url` each file tool already returns. It is pre-signed and expires, so
-give it out when you find it rather than describing the file and waiting.
-
-download_files is the other thing entirely: it writes to ~/Downloads on the
-machine running this agent, which is not necessarily theirs. Reach for it only
-when someone asks for files saved to disk, and say where they landed. When they
-just want the file, a link is the answer.
-
-ANSWERING
-Never state a number, filename, date or grade the tools did not return. If a
-tool comes back empty, report that rather than filling the gap. Be brief.
-"""
+def _system_prompt(state):
+    """What create_react_agent hands the model: the prompt, then the history."""
+    return [{"role": "system", "content": build_prompt()}] + state["messages"]
 
 
 ####
@@ -130,9 +78,16 @@ async def get_agent():
         if _agent is None:
             tools = await MultiServerMCPClient(MCP).get_tools()
             _agent = create_react_agent(
-                ChatAnthropic(model="claude-haiku-4-5", max_tokens=4096),
+                # Passed in rather than left to the SDK's own environment
+                # lookup, since the key normally comes from the settings page
+                # and was never in this process's environment to be found.
+                ChatAnthropic(
+                    model="claude-haiku-4-5",
+                    max_tokens=4096,
+                    api_key=require_anthropic_key(),
+                ),
                 tools,
-                prompt=PROMPT,
+                prompt=_system_prompt,
             )
     return _agent
 

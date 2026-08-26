@@ -7,6 +7,7 @@ FocusLab_MCP/server.py wraps the same functions as MCP tools for the agent.
 
 import os
 import re
+import time
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -19,6 +20,79 @@ load_dotenv(next((e for e in (_ROOT / "Client_MCP" / ".env", _BACKEND / ".env")
                   if e.exists()), _BACKEND / ".env"))
 
 _client = None
+_client_credentials = None      # what the cached client above was built with
+_cached_credentials = None      # (credentials, when they were last looked up)
+
+# How long a credential lookup is reused before being asked again. This module
+# runs inside the agent as well as inside the backend, and there the lookup is
+# an HTTP round trip, so re-resolving on every single Canvas call would double
+# the requests. Half a minute is short enough that keys saved on the settings
+# page start working without anyone restarting anything.
+_CREDENTIALS_TTL_SECONDS = 30
+
+
+def _saved_credentials_over_http():
+    """The saved Canvas keys, asked for over HTTP, or None.
+
+    This module runs in two processes. Inside the backend the database is right
+    there; inside the FocusAI agent it is not - that container mounts this one
+    package and nothing else of the backend, with no database volume and no
+    .env of the user's. So the agent asks the backend, over the same hop
+    FocusLab_MCP/notes.py already makes for notes.
+    """
+    api_url = os.getenv("FOCUSLAB_API_URL", "http://localhost:8000").rstrip("/")
+    try:
+        reply = httpx.get(f"{api_url}/keys/resolved", timeout=5)
+        reply.raise_for_status()
+        keys = reply.json()
+    #A backend that is down or still starting is not an error here: the
+    #environment fallback below is what a standalone run has anyway
+    except (httpx.HTTPError, ValueError):
+        return None
+    if keys.get("canvas_url") and keys.get("canvas_token"):
+        return keys["canvas_url"], keys["canvas_token"]
+    return None
+
+
+def _saved_credentials():
+    """The keys the settings page saved, read whichever way this process can."""
+    try:
+        #Only importable inside the backend, which is the point of the try
+        from sqlmodel import Session
+
+        from apis.Retrieving_Keys.core import get_stored_canvas_config
+        from database import engine
+    except ImportError:
+        return _saved_credentials_over_http()
+    with Session(engine) as session:
+        return get_stored_canvas_config(session)
+
+
+def _credentials():
+    """The Canvas host and token to call with: saved keys first, .env second.
+
+    The settings page is the source of truth now. CANVAS_URL and CANVAS_TOKEN
+    still work for a checkout where nobody has opened that page - the dev setup,
+    and a fresh install - but a saved key wins over one in a file.
+    """
+    global _cached_credentials
+    now = time.monotonic()
+    #1-)A lookup from a moment ago is good enough, see the TTL above
+    if _cached_credentials and now - _cached_credentials[1] < _CREDENTIALS_TTL_SECONDS:
+        credentials = _cached_credentials[0]
+    else:
+        #2-)What the user typed into FocusLab, then what a .env carries
+        credentials = _saved_credentials()
+        if not credentials:
+            base, token = os.getenv("CANVAS_URL"), os.getenv("CANVAS_TOKEN")
+            credentials = (base, token) if base and token else None
+        _cached_credentials = (credentials, now)
+    #3-)Neither source has a usable pair
+    if not credentials:
+        raise RuntimeError(
+            "Canvas is not configured: add your Canvas URL and token in Settings"
+        )
+    return credentials
 
 
 def _canvas():
@@ -27,18 +101,22 @@ def _canvas():
     main.py imports this package to mount the routes, so building the client at
     import time meant an unset CANVAS_TOKEN stopped the whole API from starting
     - Spotify included - instead of only failing the Canvas routes.
+
+    Rebuilt whenever the credentials change, so saving a new token on the
+    settings page takes effect without a restart: httpx bakes the base URL and
+    the Authorization header into the client, so a cached one would go on using
+    the old school and the old token forever.
     """
-    global _client
-    if _client is None:
-        try:
-            base, token = os.environ["CANVAS_URL"], os.environ["CANVAS_TOKEN"]
-        except KeyError as missing:
-            raise RuntimeError(f"Canvas is not configured: {missing} is unset") from None
+    global _client, _client_credentials
+    credentials = _credentials()
+    if _client is None or _client_credentials != credentials:
+        base, token = credentials
         _client = httpx.Client(
             base_url=f"{base}/api/v1",
             headers={"Authorization": f"Bearer {token}"},
             timeout=30,
         )
+        _client_credentials = credentials
     return _client
 
 # Canvas hides unpublished courses unless asked, and unpublished is where next

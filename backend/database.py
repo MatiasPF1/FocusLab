@@ -39,12 +39,22 @@ startup, and is a no-op from then on.
 
     table -> column name -> the SQLite type and default to add it with
 
-Empty at the moment. Its one entry was note.cover, from when the Notebook was
-still writing into the To-Do table; covers now live on notebook_entry, which is
-created complete. A file written before the split keeps that unused column -
-nothing reads it, and SQLite cannot drop a column without rebuilding the table.
+The apicredentials entries are from when the settings page grew from Spotify
+alone to Spotify, Canvas and Claude. A database file written before that has
+the table with only the two Spotify columns.
+
+Its other entry was note.cover, from when the Notebook was still writing into
+the To-Do table; covers now live on notebook_entry, which is created complete.
+A file written before the split keeps that unused column - nothing reads it,
+and SQLite cannot drop a column without rebuilding the table.
 '''
-_ADDED_COLUMNS = {}
+_ADDED_COLUMNS = {
+    "apicredentials": {
+        "canvas_url": "VARCHAR",
+        "canvas_token": "VARCHAR",
+        "anthropic_key": "VARCHAR",
+    },
+}
 
 
 def _add_missing_columns():

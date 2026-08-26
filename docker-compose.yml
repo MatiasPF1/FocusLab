@@ -3,8 +3,9 @@ services:
     build:
       context: ./frontend
 
+    # Loopback only, like every port here. See the backend's note below.
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
 
     volumes:
       - ./frontend:/app
@@ -49,8 +50,15 @@ services:
     build:
       context: ./backend
 
+    # Loopback only. A bare "8000:8000" binds 0.0.0.0, which puts this API on
+    # every network the machine is attached to - so on campus wifi, anyone who
+    # scans the subnet reaches /keys/resolved and reads the user's Canvas token
+    # and Claude key in plaintext, and /notes reads their notes. There is no
+    # authentication here by design: this is a single-user desktop app, and
+    # what makes that safe is being unreachable from anywhere but this machine.
+    # CORS does not help - it constrains browsers, not curl.
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
 
     volumes:
       - ./backend:/app
@@ -70,8 +78,10 @@ services:
       context: .
       dockerfile: Client_MCP/Dockerfile
 
+    # Loopback only. /chat spends the user's Anthropic credit, so an exposed
+    # port here is someone else's bill as well as someone else's answers.
     ports:
-      - "8001:8001"
+      - "127.0.0.1:8001:8001"
 
     environment:
       # The notes tools read the backend's /notes API. Inside the compose
@@ -83,9 +93,10 @@ services:
       - backend
 
     volumes:
-      # Mirrors the image layout so --reload sees edits. Client_MCP carries
-      # the .env holding ANTHROPIC_KEY and the Canvas token, which the MCP
-      # server inherits when the agent spawns it.
+      # Mirrors the image layout so --reload sees edits. No credentials ride
+      # along here any more: the Canvas token and the Claude key are asked for
+      # from the backend at /keys/resolved, since this container has neither
+      # the database volume nor a file of its own to read them from.
       - ./Client_MCP:/app/Client_MCP
       - ./FocusLab_MCP:/app/FocusLab_MCP
       - ./backend/apis/canvas:/app/backend/apis/canvas

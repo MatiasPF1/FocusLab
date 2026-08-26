@@ -103,7 +103,7 @@ export default function FocusAIPanel({ onClose }: { onClose: () => void }) {
           <p className="text-sm font-medium leading-tight tracking-tight text-ob-mist">FocusAI</p>
           {/* Tracked small caps turn a throwaway line into a label */}
           <p className="mt-1 text-[10px] uppercase leading-none tracking-[0.14em] text-ob-slate">
-            Your study agent
+            Your Canvas agent
           </p>
         </div>
 

@@ -15,11 +15,12 @@ import FocusAIPanel from "./(1.1)Home/FocusAIPanel";
  * from scratch on every click — which is what full-page-shell duplication in
  * each page.tsx was doing before.
  *
- * The intro pages are the exception: the landing page and the API-keys setup
- * page are full-screen and have no navigation, so they render without this
- * shell and never start a Spotify connection before the user has even reached
- * the app - which also matters because the keys page is where the credentials
- * that connection needs are entered in the first place.
+ * The landing page is the exception: it is full-screen, has no navigation, and
+ * should not start a Spotify connection before the user has even reached the
+ * app, so it renders without this shell. The API-keys page used to be exempt
+ * too, back when it sat between the landing page and the dashboard; it is now
+ * a settings page reached from the sidebar, so it keeps the shell like any
+ * other in-app page.
  */
 export default function AppShell({
   children,
@@ -33,7 +34,7 @@ export default function AppShell({
   // Next may hand back the parentheses percent-encoded depending on how the
   // route was reached, so compare against the decoded path.
   const currentPath = decodeURIComponent(pathname);
-  const isIntro = currentPath === "/" || currentPath === "/(0.1)API_Keys";
+  const isIntro = currentPath === "/";
 
   if (isIntro) {
     return <>{children}</>;
